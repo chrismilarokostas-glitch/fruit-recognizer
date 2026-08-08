@@ -233,3 +233,42 @@ th { background-color: var(--surface-1); font-weight: 600; font-family: var(--fo
 
 /* Μαζική διαγραφή */
 .bulk-action-bar { display: flex; align-items: center; justify-content: space-between; background: var(--citrus-tint); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.9rem; margin-bottom: 1rem; font-size: 0.88rem; font-weight: 600; color: var(--citrus-dark); }
+
+/* --- Mobile (κινητό) --- */
+@media (max-width: 480px) {
+    body { padding: 1rem 0.7rem; }
+
+    /* Ο τίτλος σε 2.4rem δεν χωράει σε μία γραμμή στα 375px - στριμώχνεται
+       σε 2 γραμμές άσχημα. Μικρότερο μέγεθος ώστε να χωράει σωστά (το εικονίδιο
+       μικραίνει μαζί, κληρονομεί το font-size του h1). */
+    header h1 { font-size: 1.6rem; gap: 8px; }
+    header p { font-size: 0.92rem; }
+
+    /* Το theme-toggle είναι position:fixed (πάντα στο ίδιο σημείο της οθόνης) -
+       στο κινητό αυτό σημαίνει ότι "επιπλέει" πάνω σε ό,τι σκρολάρεις από κάτω
+       (π.χ. πάνω στα κουμπιά "Εξαγωγή"/refresh του Ιστορικού). Το κάνουμε
+       absolute μέσα στο header, ώστε να σκρολάρει μαζί με τη σελίδα αντί να
+       μένει καρφωμένο στο viewport. */
+    header { position: relative; }
+    .theme-toggle { position: absolute; top: 0; right: 0; }
+
+    .card { padding: 1.2rem; }
+
+    /* Card headers με τίτλο + κουμπιά (π.χ. Ιστορικό: Εξαγωγή + Refresh) δεν
+       χωράνε δίπλα-δίπλα σε στενή οθόνη - πέφτουν σε ξεχωριστή γραμμή από κάτω. */
+    .card-title { flex-wrap: wrap; row-gap: 0.6rem; }
+    .card-title > div { width: 100%; justify-content: flex-end; }
+
+    /* 3 στοιχεία (αναζήτηση/ημερομηνία/καθαρισμός) δίπλα-δίπλα γίνονται ~84px
+       το καθένα - πολύ στενά για να γράψεις. Στοίβα, ένα κάτω από το άλλο. */
+    .history-toolbar { flex-direction: column; }
+    .history-toolbar input[type="text"], .history-toolbar input[type="date"], .history-toolbar .btn-outline { width: 100%; }
+
+    .result-header { flex-wrap: wrap; }
+
+    .info-grid { grid-template-columns: 1fr; }
+
+    .toast-container { left: 0.7rem; right: 0.7rem; bottom: 0.7rem; max-width: none; }
+
+    .confirm-modal, .gradcam-lightbox { padding: 1.1rem; }
+}
