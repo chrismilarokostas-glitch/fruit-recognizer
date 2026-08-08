@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+dataset/
+gradcam/
+fruits_history.db
+model_stats.json
+evaluate_model.py
+evaluate_model.log
+train_mobilenet.py
+grad_cam.py
+camera_live.py
+.claude/
+.git/
+.gitignore

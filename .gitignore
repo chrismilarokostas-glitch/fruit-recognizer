@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Dataset (1.4GB, 40k+ εικόνες) - όχι στο repo, χρειάζεται μόνο τοπικά για
+# εκπαίδευση/αξιολόγηση (train_mobilenet.py, evaluate_model.py), όχι στο API
+dataset/
+
+# Τοπικά δεδομένα/αρχεία εκτέλεσης - δεν πρέπει να ζουν στο repo
+fruits_history.db
+gradcam/
+evaluate_model.log
+
+# Dev tooling, όχι μέρος της εφαρμογής
+.claude/
