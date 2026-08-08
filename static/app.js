@@ -320,6 +320,11 @@ function renderPredictionResult(data) {
     document.getElementById('categoryLabel').textContent = data.info.category;
     updateGauge(data.confidence_percentage);
 
+    // Ίδιο κατώφλι (40%) με το χρώμα του gauge - αν το gauge δείχνει κόκκινο,
+    // δείχνουμε και ρητή προειδοποίηση χαμηλής βεβαιότητας.
+    document.getElementById('lowConfidenceWarning').style.display =
+        data.confidence_percentage < 40 ? 'flex' : 'none';
+
     // Grad-CAM: επιστρέφεται μόνο για κανονικά uploads (όχι live camera frames)
     const gradcamBox = document.getElementById('gradcamBox');
     if (data.gradcam_image) {
@@ -622,6 +627,18 @@ function closeGradcamLightbox() {
 }
 document.getElementById('gradcamLightboxClose').addEventListener('click', closeGradcamLightbox);
 gradcamOverlay.addEventListener('click', (e) => { if (e.target === gradcamOverlay) closeGradcamLightbox(); });
+
+// Esc κλείνει όποιο modal είναι ανοιχτό (Grad-CAM lightbox ή confirm dialog).
+// Το confirmCancelBtn.click() είναι ασφαλές ακόμα κι όταν δεν υπάρχει ανοιχτό
+// confirm dialog - τότε δεν έχει κανέναν attached listener, άρα δεν κάνει τίποτα.
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (gradcamOverlay.classList.contains('active')) {
+        closeGradcamLightbox();
+    } else if (confirmOverlay.classList.contains('active')) {
+        confirmCancelBtn.click();
+    }
+});
 
 async function viewHistoryGradcam(recordId) {
     gradcamLightboxId.textContent = `#${recordId}`;

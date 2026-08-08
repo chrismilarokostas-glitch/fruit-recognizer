@@ -20,7 +20,7 @@
         <header>
             <div class="eyebrow">Πτυχιακή Εργασία · Computer Vision</div>
             <h1><i class="fa-solid fa-lemon"></i> AI Fruit Recognizer</h1>
-            <p>Αναγνώριση, Ταξινόμηση Top-3 & Εγκυκλοπαίδεια Φρούτων με Τεχνητή Νοημοσύνη</p>
+            <p>Αυτόματη Αναγνώριση, Ταξινόμηση & Ανάλυση Φρούτων με Χρήση Τεχνητής Νοημοσύνης</p>
         </header>
 
         <div class="main-grid">
@@ -42,7 +42,7 @@
                 <div id="uploadSection">
                     <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
                         <i class="fa-regular fa-image"></i>
-                        <p><b>Κάντε κλικ</b> ή σύρετε μία ή περισσότερες εικόνες φρούτου εδώ</p>
+                        <p><b>Κάντε κλικ</b> ή σύρετε μια φωτογραφία φρούτου εδώ</p>
                     </div>
                     <input type="file" id="fileInput" accept="image/*" multiple>
 
@@ -96,6 +96,11 @@
                             </div>
                             <div class="category-label" id="categoryLabel">-</div>
                         </div>
+                    </div>
+
+                    <div class="low-confidence-warning" id="lowConfidenceWarning" style="display: none;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Το μοντέλο δεν είναι σίγουρο για αυτή την πρόβλεψη — δοκίμασε καλύτερο φωτισμό, γωνία, ή πιο καθαρή εικόνα του φρούτου.</span>
                     </div>
 
                     <div class="top3-box">
