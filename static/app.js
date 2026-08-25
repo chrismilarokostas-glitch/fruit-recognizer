@@ -3,8 +3,6 @@
 // αλλιώς ακολουθεί την προτίμηση συστήματος (prefers-color-scheme) την πρώτη φορά.
 function applyTheme(theme) {
     document.body.classList.toggle('dark', theme === 'dark');
-    const icon = document.getElementById('themeIcon');
-    if (icon) icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
 }
 function toggleTheme() {
     const next = document.body.classList.contains('dark') ? 'light' : 'dark';
@@ -35,23 +33,26 @@ const captureCanvas = document.getElementById('captureCanvas');
 const dropZone = document.getElementById('dropZone');
 const batchList = document.getElementById('batchList');
 
-// --- Ήχος πρόβλεψης (μικρό "ding" με Web Audio API, χωρίς εξωτερικό αρχείο ήχου) ---
+// --- Ήχος πρόβλεψης ("ta-da" chime δύο νοτών με Web Audio API, χωρίς εξωτερικό αρχείο ήχου) ---
 let audioCtx = null;
+function playTone(freq, startTime, duration) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.22, startTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.02);
+}
 function playPredictionSound() {
     try {
         audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
         const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(660, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.26);
+        playTone(523.25, now, 0.14);        // C5
+        playTone(659.25, now + 0.09, 0.22); // E5
     } catch (err) {
         // Αν το Web Audio αποτύχει (π.χ. autoplay policy) απλά δεν παίζει ήχος - όχι κρίσιμο.
     }
@@ -294,6 +295,7 @@ async function uploadAndPredict() {
     document.getElementById('btnText').style.display = 'none';
     document.getElementById('btnSpinner').style.display = 'block';
     predictBtn.disabled = true;
+    showResultSkeleton();
 
     if (selectedFiles.length === 1) {
         await processPrediction(selectedFiles[0]);
@@ -312,6 +314,7 @@ async function runBatchPredict() {
 
     for (let i = 0; i < selectedFiles.length; i++) {
         setBatchItemStatus(i, 'processing');
+        showResultSkeleton();
         try {
             const data = await predictImage(selectedFiles[i]);
             renderPredictionResult(data);
@@ -323,6 +326,13 @@ async function runBatchPredict() {
             setBatchItemStatus(i, 'error');
             errorCount++;
         }
+    }
+
+    // Αν ΟΛΕΣ οι εικόνες απέτυχαν, το skeleton θα έμενε εκεί για πάντα αφού
+    // κανένα renderPredictionResult() δεν θα το είχε κρύψει - επαναφορά στο placeholder.
+    if (successCount === 0) {
+        document.getElementById('resultSkeleton').style.display = 'none';
+        document.getElementById('placeholder').style.display = 'flex';
     }
 
     loadHistory();
@@ -351,7 +361,17 @@ async function predictImage(fileOrBlob, options = {}) {
     return response.json();
 }
 
+// Δείχνει το loading skeleton στο result panel αντί για το προηγούμενο
+// αποτέλεσμα (ή το placeholder) όσο τρέχει το request - πιο σαφές feedback
+// από το μοναχικό spinner στο κουμπί, ειδικά σε αργό server (free tier).
+function showResultSkeleton() {
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('resultContent').style.display = 'none';
+    document.getElementById('resultSkeleton').style.display = 'block';
+}
+
 function renderPredictionResult(data) {
+    document.getElementById('resultSkeleton').style.display = 'none';
     document.getElementById('placeholder').style.display = 'none';
     document.getElementById('resultContent').style.display = 'block';
 
@@ -420,6 +440,10 @@ async function processPrediction(fileOrBlob, options = {}) {
     } catch (error) {
         console.error(error);
         if (!isLiveFrame) {
+            // Το skeleton δείχθηκε πριν το request (uploadAndPredict) - αφού
+            // απέτυχε, δεν θα το κρύψει ποτέ το renderPredictionResult().
+            document.getElementById('resultSkeleton').style.display = 'none';
+            document.getElementById('placeholder').style.display = 'flex';
             showToast('Απέτυχε η επεξεργασία της εικόνας.', 'error');
         }
     }
