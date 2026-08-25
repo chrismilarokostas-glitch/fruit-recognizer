@@ -1,4 +1,5 @@
 import io
+import gc
 import csv
 import json
 import base64
@@ -47,6 +48,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Το Render free tier περιορίζει σε 0.5 CPU - το default multi-threading του
+# PyTorch (συνήθως όσα cores βλέπει το container) δεν προσφέρει ταχύτητα εκεί,
+# απλά πολλαπλασιάζει τη μνήμη με ξεχωριστά buffers ανά thread. Ένα thread αρκεί.
+torch.set_num_threads(1)
+
 # 3. Φόρτωση Μοντέλου PyTorch
 MODEL_PATH = "fruit_mobilenetv2.pth"
 checkpoint = torch.load(MODEL_PATH, map_location=torch.device('cpu'), weights_only=False)
@@ -88,8 +94,12 @@ def generate_gradcam_data_uri(original_image: Image.Image, predicted_idx: int) -
     ένα <img src="..."> στο frontend, χωρίς ενδιάμεσο αρχείο).
     """
     input_tensor = transform(original_image).unsqueeze(0)
-    input_tensor.requires_grad_(True)
-
+    # ΔΕΝ κάνουμε input_tensor.requires_grad_(True): το GRADCAM_TARGET_LAYER
+    # είναι ήδη μέσα στα ξεπαγωμένα (trainable) blocks, οπότε τα gradients
+    # φτάνουν ως εκεί μέσω των δικών του παραμέτρων - δεν χρειάζεται να
+    # χτίσει/κρατήσει το autograd backward buffers για ΟΛΟ το δίκτυο μέχρι
+    # το input (συμπεριλαμβανομένων των παγωμένων πρώτων blocks). Λιγότερη
+    # μνήμη ανά request - κρίσιμο στο όριο μνήμης του free tier hosting.
     activations = []
     gradients = []
 
@@ -124,6 +134,11 @@ def generate_gradcam_data_uri(original_image: Image.Image, predicted_idx: int) -
     finally:
         fh.remove()
         bh.remove()
+        # Το backward() παραπάνω αφήνει gradients πάνω στις παραμέτρους του
+        # (global, κοινού) μοντέλου - χωρίς αυτό το καθάρισμα θα έμεναν στη
+        # μνήμη μέχρι το ΕΠΟΜΕΝΟ request αντί να ελευθερωθούν αμέσως.
+        model.zero_grad(set_to_none=True)
+        gc.collect()
 
     cam_resized = Image.fromarray((cam_np * 255).astype(np.uint8)).resize(
         original_image.size, resample=Image.BILINEAR
