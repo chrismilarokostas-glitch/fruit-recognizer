@@ -61,18 +61,17 @@ else:
 # 2. Hyperparameters & Paths
 DATA_DIR = r"C:\Users\crish\Desktop\ptyxiakh\dataset"
 BATCH_SIZE = 16  # Μειωμένο από 32: το torch-directml σε AMD GPU δεν ελευθερώνει
-                  # καλά τη μνήμη μεταξύ epochs (γνωστό memory leak), οπότε
-                  # μικρότερο batch size μειώνει την πίεση στη VRAM
+                    # καλά τη μνήμη μεταξύ epochs (γνωστό memory leak), οπότε
+                    # μικρότερο batch size μειώνει την πίεση στη VRAM
 EPOCHS = 10  # Λιγότερα epochs: συνεχίζουμε από ήδη καλά εκπαιδευμένο μοντέλο,
-             # δεν ξεκινάμε από την αρχή - αύξησε το αν θες περισσότερη εκπαίδευση
+                # δεν ξεκινάμε από την αρχή - αύξησε το αν θες περισσότερη εκπαίδευση
 BACKBONE_LR = 0.0002   # Χαμηλότερο από πριν - μικρές, προσεκτικές διορθώσεις
-                       # πάνω σε ήδη καλά βάρη, όχι εκπαίδευση από το μηδέν
+                        # πάνω σε ήδη καλά βάρη, όχι εκπαίδευση από το μηδέν
 CLASSIFIER_LR = 0.002
 IMAGE_SIZE = 224
 
 # 3. Data Augmentation & Normalization
-# Το Fruits-360 έχει πολύ "καθαρές" εικόνες (λευκό φόντο, σταθερός φωτισμός,
-# περιστρεφόμενη βάση). Χρησιμοποιούμε πιο επιθετικό augmentation, ΚΑΙ τώρα
+# Χρησιμοποιούμε πιο επιθετικό augmentation, ΚΑΙ τώρα
 # background randomization, ώστε το μοντέλο να μη μάθει το συγκεκριμένο "στυλ"
 # του dataset αλλά πιο γενικά χαρακτηριστικά του ίδιου του φρούτου.
 data_transforms = {
@@ -133,10 +132,10 @@ if os.path.exists(CHECKPOINT_PATH):
     if checkpoint.get("class_names") == class_names:
         model.load_state_dict(checkpoint["model_state_dict"])
         print(f"--> Βρέθηκε υπάρχον checkpoint· συνεχίζουμε την εκπαίδευση από εκεί "
-              f"(προηγούμενο epoch: {checkpoint.get('completed_epoch', '?')}).")
+                f"(προηγούμενο epoch: {checkpoint.get('completed_epoch', '?')}).")
     else:
         print("--> Βρέθηκε checkpoint αλλά με διαφορετικές κλάσεις (π.χ. άλλαξες dataset)· "
-              "ξεκινάμε από την αρχή με τα ImageNet βάρη.")
+                "ξεκινάμε από την αρχή με τα ImageNet βάρη.")
 else:
     print("--> Δεν βρέθηκε υπάρχον checkpoint· ξεκινάμε από την αρχή με τα ImageNet βάρη.")
 

@@ -21,6 +21,9 @@
             <div class="eyebrow">Πτυχιακή Εργασία · Computer Vision</div>
             <h1><i class="fa-solid fa-lemon"></i> AI Fruit Recognizer</h1>
             <p>Αυτόματη Αναγνώριση, Ταξινόμηση & Ανάλυση Φρούτων με Χρήση Τεχνητής Νοημοσύνης</p>
+            <button class="methodology-link" onclick="openMethodologyModal()">
+                <i class="fa-solid fa-circle-info"></i> Μεθοδολογία & Περιορισμοί
+            </button>
         </header>
 
         <div class="main-grid">
@@ -60,7 +63,12 @@
 
                 <!-- Live Camera Mode -->
                 <div id="cameraSection" style="display: none; text-align: center;">
-                    <video id="webcamVideo" autoplay playsinline style="width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--border); background: #000;"></video>
+                    <div class="video-wrap">
+                        <video id="webcamVideo" autoplay playsinline muted></video>
+                        <button class="camera-switch-btn" id="cameraSwitchBtn" onclick="switchCamera()" title="Εναλλαγή μπροστινής/πίσω κάμερας" style="display: none;">
+                            <i class="fa-solid fa-camera-rotate"></i>
+                        </button>
+                    </div>
                     <canvas id="captureCanvas" style="display: none;"></canvas>
 
                     <button class="btn" id="streamToggleBtn" onclick="toggleLiveStream()" style="background-color: #2563eb;">
@@ -156,8 +164,16 @@
 
             <div class="history-toolbar">
                 <input type="text" id="historySearchInput" placeholder="Αναζήτηση με όνομα φρούτου...">
-                <input type="date" id="historyDateInput" title="Φιλτράρισμα ανά ημερομηνία">
+                <input type="date" id="historyDateFromInput" title="Από ημερομηνία">
+                <input type="date" id="historyDateToInput" title="Έως ημερομηνία">
                 <button class="btn-outline" onclick="clearHistoryFilters()"><i class="fa-solid fa-xmark"></i> Καθαρισμός</button>
+            </div>
+
+            <div class="history-date-presets" id="historyDatePresets">
+                <button class="preset-btn" data-preset="today" onclick="applyDatePreset('today')">Σήμερα</button>
+                <button class="preset-btn" data-preset="7d" onclick="applyDatePreset('7d')">Τελευταίες 7 ημέρες</button>
+                <button class="preset-btn" data-preset="30d" onclick="applyDatePreset('30d')">Τελευταίος μήνας</button>
+                <button class="preset-btn active" data-preset="all" onclick="applyDatePreset('all')">Όλες</button>
             </div>
 
             <div class="bulk-action-bar" id="bulkActionBar" style="display: none;">
@@ -198,6 +214,32 @@
             <div class="confirm-actions">
                 <button class="btn btn-secondary" id="confirmCancelBtn">Άκυρο</button>
                 <button class="btn btn-danger" id="confirmOkBtn">Διαγραφή</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="methodology-overlay" id="methodologyOverlay">
+        <div class="methodology-modal">
+            <div class="methodology-header">
+                <span><i class="fa-solid fa-flask"></i> Μεθοδολογία & Περιορισμοί</span>
+                <button class="methodology-close" id="methodologyClose" aria-label="Κλείσιμο">&times;</button>
+            </div>
+            <div class="methodology-body">
+                <h3>Αρχιτεκτονική Μοντέλου</h3>
+                <p>Το μοντέλο βασίζεται στο <b>MobileNetV2</b>, προεκπαιδευμένο σε ImageNet. Τα τελευταία blocks του backbone ξεπαγώθηκαν και εκπαιδεύτηκαν εκ νέου (fine-tuning), μαζί με έναν custom classifier (πλήρως συνδεδεμένο layer με Dropout) στο τέλος, ειδικά προσαρμοσμένο για ταξινόμηση φρούτων/λαχανικών.</p>
+
+                <h3>Dataset</h3>
+                <p>Η εκπαίδευση έγινε πάνω σε dataset τύπου <b>Fruits-360</b>: εικόνες φρούτων/λαχανικών με σχετικά καθαρό, ελεγχόμενο φόντο και σταθερό φωτισμό.</p>
+
+                <h3>Bias Φόντου & Πώς Αντιμετωπίστηκε</h3>
+                <p>Ανάλυση με <b>Grad-CAM</b> στα πρώιμα στάδια εκπαίδευσης αποκάλυψε ότι το μοντέλο «κολλούσε» σε χαρακτηριστικά του φόντου (το σχεδόν ομοιόμορφο, ανοιχτόχρωμο φόντο του dataset) αντί να μαθαίνει τα οπτικά χαρακτηριστικά του ίδιου του φρούτου (σχήμα, υφή, χρώμα). Για να διορθωθεί αυτό, προστέθηκε τυχαία αντικατάσταση φόντου (background randomization) κατά την εκπαίδευση, ώστε το μοντέλο να αναγκαστεί να μάθει πιο γενικά, ανθεκτικά χαρακτηριστικά αντί να «κολλήσει» στο στυλ του dataset.</p>
+
+                <h3>Γνωστοί Περιορισμοί</h3>
+                <ul>
+                    <li>Το dataset έχει καθαρό/ελεγχόμενο φόντο — η ακρίβεια σε πραγματικές φωτογραφίες (κινητό, φυσικό περιβάλλον, μεικτός φωτισμός) μπορεί να διαφέρει από αυτή στο test set.</li>
+                    <li>Παρόμοιες ποικιλίες/είδη (π.χ. διαφορετικές ποικιλίες μήλου) μπορεί να συγχέονται μεταξύ τους.</li>
+                    <li>Το Grad-CAM δείχνει πού «κοιτάει» το μοντέλο, όχι αν η πρόβλεψη είναι σωστή — χρησιμοποιείται για ερμηνευσιμότητα (interpretability), όχι για επαλήθευση ακρίβειας.</li>
+                </ul>
             </div>
         </div>
     </div>

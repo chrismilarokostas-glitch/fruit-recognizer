@@ -13,7 +13,13 @@ COPY requirements.txt .
 
 # Το CPU-only PyTorch index είναι πολύ μικρότερο από το default PyPI index
 # (χωρίς CUDA binaries) - χρειαζόμαστε μόνο CPU inference σε production.
-RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
+# ΣΗΜΑΝΤΙΚΟ: το --index-url περιορίζει το pip ΜΟΝΟ σε αυτό το index, το οποίο
+# δεν έχει wheel για transitive dependencies όπως το typing_extensions -
+# χωρίς wheel, το pip προσπαθεί να το χτίσει από πηγαίο κώδικα και σκάει
+# (χρειάζεται flit_core που επίσης δεν υπάρχει εκεί). Το εγκαθιστούμε πρώτα
+# από το κανονικό PyPI ώστε να είναι ήδη ικανοποιημένο πριν περιοριστούμε.
+RUN pip install --no-cache-dir typing_extensions \
+    && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
         torch==2.4.1 torchvision==0.19.1 \
     && pip install --no-cache-dir -r requirements.txt
 

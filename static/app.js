@@ -35,6 +35,28 @@ const captureCanvas = document.getElementById('captureCanvas');
 const dropZone = document.getElementById('dropZone');
 const batchList = document.getElementById('batchList');
 
+// --- Ήχος πρόβλεψης (μικρό "ding" με Web Audio API, χωρίς εξωτερικό αρχείο ήχου) ---
+let audioCtx = null;
+function playPredictionSound() {
+    try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(660, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.26);
+    } catch (err) {
+        // Αν το Web Audio αποτύχει (π.χ. autoplay policy) απλά δεν παίζει ήχος - όχι κρίσιμο.
+    }
+}
+
 // --- Toast notifications ---
 const toastContainer = document.getElementById('toastContainer');
 const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
@@ -133,13 +155,36 @@ function switchMode(mode) {
     }
 }
 
-async function initWebcam() {
+let currentFacingMode = 'user';
+
+async function initWebcam(facingMode = currentFacingMode) {
     try {
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
         webcamVideo.srcObject = videoStream;
+        currentFacingMode = facingMode;
+        updateCameraSwitchVisibility();
     } catch (err) {
         showToast("Σφάλμα πρόσβασης στην κάμερα: " + err.message, 'error');
     }
+}
+
+// Το κουμπί εναλλαγής εμφανίζεται μόνο αν η συσκευή έχει πάνω από μία κάμερα
+// (π.χ. κινητό με μπροστινή/πίσω) - σε laptop με μία webcam κρύβεται.
+async function updateCameraSwitchVisibility() {
+    const btn = document.getElementById('cameraSwitchBtn');
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter(d => d.kind === 'videoinput');
+        btn.style.display = videoInputs.length > 1 ? 'flex' : 'none';
+    } catch (err) {
+        btn.style.display = 'none';
+    }
+}
+
+function switchCamera() {
+    const nextFacing = currentFacingMode === 'user' ? 'environment' : 'user';
+    initWebcam(nextFacing);
 }
 
 function toggleLiveStream() {
@@ -270,6 +315,7 @@ async function runBatchPredict() {
         try {
             const data = await predictImage(selectedFiles[i]);
             renderPredictionResult(data);
+            playPredictionSound();
             setBatchItemStatus(i, 'done');
             successCount++;
         } catch (error) {
@@ -364,8 +410,11 @@ async function processPrediction(fileOrBlob, options = {}) {
         const data = await predictImage(fileOrBlob, { isLiveFrame, filename });
         renderPredictionResult(data);
 
-        // Το ιστορικό ανανεώνεται μόνο για upload (όχι για κάθε live camera frame)
+        // Το ιστορικό ανανεώνεται μόνο για upload (όχι για κάθε live camera frame).
+        // Ο ήχος πρόβλεψης παίζει ΜΟΝΟ για upload - στο live streaming θα ήταν
+        // ενοχλητικό αφού τρέχει πρόβλεψη κάθε 800ms.
         if (!isLiveFrame) {
+            playPredictionSound();
             loadHistory();
         }
     } catch (error) {
@@ -386,13 +435,61 @@ let historySortDir = 'desc';
 let selectedHistoryIds = new Set();
 
 const historySearchInput = document.getElementById('historySearchInput');
-const historyDateInput = document.getElementById('historyDateInput');
+const historyDateFromInput = document.getElementById('historyDateFromInput');
+const historyDateToInput = document.getElementById('historyDateToInput');
 historySearchInput.addEventListener('input', () => { currentHistoryPage = 1; renderHistoryTable(); });
-historyDateInput.addEventListener('change', () => { currentHistoryPage = 1; renderHistoryTable(); });
+[historyDateFromInput, historyDateToInput].forEach(input => {
+    input.addEventListener('change', () => {
+        setActiveDatePreset(null); // χειροκίνητη επεξεργασία - δεν ταιριάζει πια με κάποιο preset
+        currentHistoryPage = 1;
+        renderHistoryTable();
+    });
+});
 
 function clearHistoryFilters() {
     historySearchInput.value = '';
-    historyDateInput.value = '';
+    historyDateFromInput.value = '';
+    historyDateToInput.value = '';
+    setActiveDatePreset('all');
+    currentHistoryPage = 1;
+    renderHistoryTable();
+}
+
+// YYYY-MM-DD με βάση την τοπική ημερομηνία (όχι UTC, ώστε να ταιριάζει με ό,τι
+// θα έγραφε ο χρήστης χειροκίνητα στο ίδιο date input).
+function formatDateForInput(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function setActiveDatePreset(preset) {
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === preset);
+    });
+}
+
+function applyDatePreset(preset) {
+    const today = new Date();
+    if (preset === 'all') {
+        historyDateFromInput.value = '';
+        historyDateToInput.value = '';
+    } else if (preset === 'today') {
+        historyDateFromInput.value = formatDateForInput(today);
+        historyDateToInput.value = formatDateForInput(today);
+    } else if (preset === '7d') {
+        const from = new Date(today);
+        from.setDate(from.getDate() - 6);
+        historyDateFromInput.value = formatDateForInput(from);
+        historyDateToInput.value = formatDateForInput(today);
+    } else if (preset === '30d') {
+        const from = new Date(today);
+        from.setDate(from.getDate() - 29);
+        historyDateFromInput.value = formatDateForInput(from);
+        historyDateToInput.value = formatDateForInput(today);
+    }
+    setActiveDatePreset(preset);
     currentHistoryPage = 1;
     renderHistoryTable();
 }
@@ -423,11 +520,14 @@ function updateSortIndicators() {
 
 function getFilteredHistory() {
     const search = historySearchInput.value.trim().toLowerCase();
-    const dateFilter = historyDateInput.value; // 'YYYY-MM-DD'
+    const dateFrom = historyDateFromInput.value; // 'YYYY-MM-DD'
+    const dateTo = historyDateToInput.value;     // 'YYYY-MM-DD'
     const filtered = allHistoryRecords.filter(item => {
         const matchesSearch = !search || item.fruit_name.toLowerCase().includes(search);
-        const matchesDate = !dateFilter || (item.created_at && item.created_at.slice(0, 10) === dateFilter);
-        return matchesSearch && matchesDate;
+        const itemDate = item.created_at ? item.created_at.slice(0, 10) : null;
+        const matchesFrom = !dateFrom || (itemDate && itemDate >= dateFrom);
+        const matchesTo = !dateTo || (itemDate && itemDate <= dateTo);
+        return matchesSearch && matchesFrom && matchesTo;
     });
 
     filtered.sort((a, b) => {
@@ -628,13 +728,26 @@ function closeGradcamLightbox() {
 document.getElementById('gradcamLightboxClose').addEventListener('click', closeGradcamLightbox);
 gradcamOverlay.addEventListener('click', (e) => { if (e.target === gradcamOverlay) closeGradcamLightbox(); });
 
-// Esc κλείνει όποιο modal είναι ανοιχτό (Grad-CAM lightbox ή confirm dialog).
+// --- Μεθοδολογία & Περιορισμοί (στατικό, ενημερωτικό modal) ---
+const methodologyOverlay = document.getElementById('methodologyOverlay');
+function openMethodologyModal() {
+    methodologyOverlay.classList.add('active');
+}
+function closeMethodologyModal() {
+    methodologyOverlay.classList.remove('active');
+}
+document.getElementById('methodologyClose').addEventListener('click', closeMethodologyModal);
+methodologyOverlay.addEventListener('click', (e) => { if (e.target === methodologyOverlay) closeMethodologyModal(); });
+
+// Esc κλείνει όποιο modal είναι ανοιχτό (Grad-CAM lightbox, Μεθοδολογία, ή confirm dialog).
 // Το confirmCancelBtn.click() είναι ασφαλές ακόμα κι όταν δεν υπάρχει ανοιχτό
 // confirm dialog - τότε δεν έχει κανέναν attached listener, άρα δεν κάνει τίποτα.
 document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (gradcamOverlay.classList.contains('active')) {
         closeGradcamLightbox();
+    } else if (methodologyOverlay.classList.contains('active')) {
+        closeMethodologyModal();
     } else if (confirmOverlay.classList.contains('active')) {
         confirmCancelBtn.click();
     }
