@@ -21,8 +21,6 @@ function toggleTheme() {
 const API_URL = "";
 let selectedFiles = [];
 let videoStream = null;
-let streamInterval = null;
-let isStreaming = false;
 
 const fileInput = document.getElementById('fileInput');
 const previewContainer = document.getElementById('previewContainer');
@@ -140,7 +138,6 @@ function updateGauge(pct) {
 }
 
 function switchMode(mode) {
-    stopLiveStream();
     if (mode === 'upload') {
         document.getElementById('uploadTabBtn').classList.add('active');
         document.getElementById('cameraTabBtn').classList.remove('active');
@@ -188,38 +185,29 @@ function switchCamera() {
     initWebcam(nextFacing);
 }
 
-function toggleLiveStream() {
-    const btn = document.getElementById('streamToggleBtn');
-    if (!isStreaming) {
-        isStreaming = true;
-        btn.innerHTML = `<i class="fa-solid fa-stop"></i> Παύση Stream`;
-        btn.style.backgroundColor = '#dc2626';
-        streamInterval = setInterval(sendWebcamFrame, 800);
-    } else {
-        stopLiveStream();
+// Ο χρήστης πατάει το κουμπί για να τραβήξει τη ΔΙΚΗ του φωτογραφία από το
+// live βίντεο της κάμερας (κινητό ή υπολογιστής) και να πάρει πρόβλεψη πάνω σε
+// αυτήν, ακριβώς όπως σε ένα κανονικό upload (αποθήκευση στο ιστορικό,
+// Grad-CAM, ήχος) - αντί για αυτόματη ανάλυση κάθε λίγα δευτερόλεπτα.
+async function capturePhoto() {
+    if (!webcamVideo.videoWidth) {
+        showToast("Η κάμερα δεν είναι ακόμα έτοιμη.", 'error');
+        return;
     }
-}
 
-function stopLiveStream() {
-    isStreaming = false;
-    clearInterval(streamInterval);
-    const btn = document.getElementById('streamToggleBtn');
-    if (btn) {
-        btn.innerHTML = `<i class="fa-solid fa-play"></i> Έναρξη Live Stream`;
-        btn.style.backgroundColor = '#2563eb';
-    }
-}
+    const btn = document.getElementById('captureBtn');
+    btn.disabled = true;
+    showResultSkeleton();
 
-function sendWebcamFrame() {
-    if (!webcamVideo.videoWidth) return;
     captureCanvas.width = webcamVideo.videoWidth;
     captureCanvas.height = webcamVideo.videoHeight;
     const ctx = captureCanvas.getContext('2d');
     ctx.drawImage(webcamVideo, 0, 0);
 
-    captureCanvas.toBlob(blob => {
-        processPrediction(blob, { isLiveFrame: true, filename: 'frame.jpg' });
-    }, 'image/jpeg', 0.8);
+    captureCanvas.toBlob(async (blob) => {
+        await processPrediction(blob, { filename: 'camera-capture.jpg' });
+        btn.disabled = false;
+    }, 'image/jpeg', 0.9);
 }
 
 function handleFilesSelected(fileList) {
