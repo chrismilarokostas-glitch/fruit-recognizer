@@ -21,6 +21,7 @@ function toggleTheme() {
 const API_URL = "";
 let selectedFiles = [];
 let videoStream = null;
+let capturedPhotoBlob = null;
 
 const fileInput = document.getElementById('fileInput');
 const previewContainer = document.getElementById('previewContainer');
@@ -149,6 +150,7 @@ function switchMode(mode) {
         document.getElementById('uploadTabBtn').classList.remove('active');
         document.getElementById('uploadSection').style.display = 'none';
         document.getElementById('cameraSection').style.display = 'block';
+        resetCameraCapture();
         initWebcam();
     }
 }
@@ -185,29 +187,57 @@ function switchCamera() {
     initWebcam(nextFacing);
 }
 
-// Ο χρήστης πατάει το κουμπί για να τραβήξει τη ΔΙΚΗ του φωτογραφία από το
-// live βίντεο της κάμερας (κινητό ή υπολογιστής) και να πάρει πρόβλεψη πάνω σε
-// αυτήν, ακριβώς όπως σε ένα κανονικό upload (αποθήκευση στο ιστορικό,
-// Grad-CAM, ήχος) - αντί για αυτόματη ανάλυση κάθε λίγα δευτερόλεπτα.
-async function capturePhoto() {
+// Ο χρήστης πατάει "Λήψη Φωτογραφίας" για να τραβήξει τη ΔΙΚΗ του φωτογραφία
+// από το live βίντεο της κάμερας (κινητό ή υπολογιστής). Δεν τρέχει πρόβλεψη
+// αμέσως - πρώτα δείχνουμε τη φωτογραφία ώστε ο χρήστης να αποφασίσει αν του
+// κάνει ή θέλει να ξαναβγάλει, ακριβώς όπως στο upload flow.
+function capturePhoto() {
     if (!webcamVideo.videoWidth) {
         showToast("Η κάμερα δεν είναι ακόμα έτοιμη.", 'error');
         return;
     }
-
-    const btn = document.getElementById('captureBtn');
-    btn.disabled = true;
-    showResultSkeleton();
 
     captureCanvas.width = webcamVideo.videoWidth;
     captureCanvas.height = webcamVideo.videoHeight;
     const ctx = captureCanvas.getContext('2d');
     ctx.drawImage(webcamVideo, 0, 0);
 
-    captureCanvas.toBlob(async (blob) => {
-        await processPrediction(blob, { filename: 'camera-capture.jpg' });
-        btn.disabled = false;
+    captureCanvas.toBlob((blob) => {
+        capturedPhotoBlob = blob;
+        document.getElementById('cameraPreviewImage').src = URL.createObjectURL(blob);
+
+        document.getElementById('cameraVideoWrap').style.display = 'none';
+        document.getElementById('cameraPreviewContainer').style.display = 'block';
+        document.getElementById('captureBtn').style.display = 'none';
+        document.getElementById('cameraPredictBtn').style.display = 'block';
+        document.getElementById('retakeBtn').style.display = 'flex';
     }, 'image/jpeg', 0.9);
+}
+
+// Επαναφορά στο live βίντεο, χωρίς να ξαναζητήσουμε πρόσβαση στην κάμερα -
+// το stream παραμένει ενεργό στο παρασκήνιο, απλά κρύβαμε το <video>.
+function resetCameraCapture() {
+    capturedPhotoBlob = null;
+    document.getElementById('cameraPreviewContainer').style.display = 'none';
+    document.getElementById('cameraVideoWrap').style.display = 'block';
+    document.getElementById('captureBtn').style.display = 'block';
+    document.getElementById('cameraPredictBtn').style.display = 'none';
+    document.getElementById('retakeBtn').style.display = 'none';
+}
+
+function retakePhoto() {
+    resetCameraCapture();
+}
+
+// Πρόβλεψη πάνω στη φωτογραφία που τράβηξε ο χρήστης, ακριβώς όπως σε ένα
+// κανονικό upload (αποθήκευση στο ιστορικό, Grad-CAM, ήχος πρόβλεψης).
+async function predictCapturedPhoto() {
+    if (!capturedPhotoBlob) return;
+    const btn = document.getElementById('cameraPredictBtn');
+    btn.disabled = true;
+    showResultSkeleton();
+    await processPrediction(capturedPhotoBlob, { filename: 'camera-capture.jpg' });
+    btn.disabled = false;
 }
 
 function handleFilesSelected(fileList) {
@@ -374,10 +404,23 @@ function renderPredictionResult(data) {
     document.getElementById('categoryLabel').textContent = data.info.category;
     updateGauge(data.confidence_percentage);
 
-    // Ίδιο κατώφλι (40%) με το χρώμα του gauge - αν το gauge δείχνει κόκκινο,
-    // δείχνουμε και ρητή προειδοποίηση χαμηλής βεβαιότητας.
-    document.getElementById('lowConfidenceWarning').style.display =
-        data.confidence_percentage < 40 ? 'flex' : 'none';
+    // Το μοντέλο ταξινομεί ΠΑΝΤΑ σε κάποια από τις γνωστές κλάσεις φρούτων -
+    // δεν έχει τρόπο να πει "δεν ξέρω τι είναι αυτό". Πολύ χαμηλή βεβαιότητα
+    // είναι το πιο απλό διαθέσιμο σήμα ότι η εικόνα μάλλον δεν είναι καν
+    // φρούτο/λαχανικό, οπότε δείχνουμε πιο ρητό μήνυμα κάτω από ένα αυστηρότερο
+    // κατώφλι (20%) - το κατώφλι του 40% μένει όπως ήταν, ίδιο κείμενο.
+    const confidencePct = data.confidence_percentage;
+    const warningEl = document.getElementById('lowConfidenceWarning');
+    const warningText = document.getElementById('lowConfidenceWarningText');
+    if (confidencePct < 20) {
+        warningText.textContent = 'Δεν αναγνωρίστηκε φρούτο στην εικόνα.';
+        warningEl.style.display = 'flex';
+    } else if (confidencePct < 40) {
+        warningText.textContent = 'Το μοντέλο δεν είναι σίγουρο για αυτή την πρόβλεψη — δοκίμασε καλύτερο φωτισμό, γωνία, ή πιο καθαρή εικόνα του φρούτου.';
+        warningEl.style.display = 'flex';
+    } else {
+        warningEl.style.display = 'none';
+    }
 
     // Grad-CAM: επιστρέφεται μόνο για κανονικά uploads (όχι live camera frames)
     const gradcamBox = document.getElementById('gradcamBox');

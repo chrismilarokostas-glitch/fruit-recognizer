@@ -170,7 +170,7 @@ header p { color: var(--text-muted); font-size: 1.02rem; margin-top: 0.5rem; }
 
 .gradcam-box { margin: 1.2rem 0 0 0; background-color: var(--surface-2); padding: 1rem; border-radius: 10px; border: 1px solid var(--border); }
 .gradcam-image { width: 100%; border-radius: 8px; border: 1px solid var(--border); display: block; }
-.gradcam-caption { font-size: 0.78rem; color: #fff; margin-top: 0.6rem; line-height: 1.5; }
+.gradcam-caption { font-size: 0.78rem; color: var(--text-main); margin-top: 0.6rem; line-height: 1.5; }
 
 /* Info Card */
 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1rem; font-size: 0.9rem; }

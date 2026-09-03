@@ -1,5 +1,6 @@
 import os
 import gc
+import csv
 import random
 import numpy as np
 import torch
@@ -10,6 +11,9 @@ from torch.utils.data import DataLoader
 from PIL import Image
 import torch_directml
 from tqdm import tqdm
+import matplotlib
+matplotlib.use("Agg")  # χωρίς GUI backend - τρέχει από τερματικό, μόνο αποθήκευση σε αρχείο
+import matplotlib.pyplot as plt
 
 
 class RandomBackgroundReplace:
@@ -50,6 +54,50 @@ class RandomBackgroundReplace:
         return Image.fromarray(result)
 
 
+def update_learning_curve_plot(csv_path, plot_path):
+    """
+    Ξαναδιαβάζει ΟΛΟ το CSV log (συμπεριλαμβανομένων προηγούμενων runs, αν το
+    training έχει συνεχιστεί/resumed) και ξανασχεδιάζει τις καμπύλες loss/accuracy,
+    αντικαθιστώντας το PNG. Καλείται μετά από ΚΑΘΕ epoch (όχι μόνο στο τέλος),
+    ίδια λογική με το checkpoint-per-epoch παρακάτω: αν το training διακοπεί
+    απότομα (π.χ. OOM crash στο AMD GPU - βλ. σχόλιο στο BATCH_SIZE), το
+    γράφημα μέχρι το τελευταίο ολοκληρωμένο epoch είναι ήδη αποθηκευμένο.
+    """
+    with open(csv_path, "r", newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    if not rows:
+        return
+
+    epochs = [int(r["epoch"]) for r in rows]
+    train_loss = [float(r["train_loss"]) for r in rows]
+    test_loss = [float(r["test_loss"]) for r in rows]
+    train_acc = [float(r["train_acc"]) * 100 for r in rows]
+    test_acc = [float(r["test_acc"]) * 100 for r in rows]
+
+    fig, (ax_loss, ax_acc) = plt.subplots(1, 2, figsize=(12, 5))
+
+    ax_loss.plot(epochs, train_loss, marker="o", label="Train")
+    ax_loss.plot(epochs, test_loss, marker="o", label="Test")
+    ax_loss.set_xlabel("Epoch")
+    ax_loss.set_ylabel("Loss")
+    ax_loss.set_title("Καμπύλη Loss")
+    ax_loss.legend()
+    ax_loss.grid(alpha=0.3)
+
+    ax_acc.plot(epochs, train_acc, marker="o", label="Train")
+    ax_acc.plot(epochs, test_acc, marker="o", label="Test")
+    ax_acc.set_xlabel("Epoch")
+    ax_acc.set_ylabel("Accuracy (%)")
+    ax_acc.set_title("Καμπύλη Accuracy")
+    ax_acc.legend()
+    ax_acc.grid(alpha=0.3)
+
+    fig.suptitle("Καμπύλες Εκπαίδευσης - MobileNetV2 Fruit Classifier")
+    fig.tight_layout()
+    fig.savefig(plot_path, dpi=150)
+    plt.close(fig)
+
+
 # 1. Ρύθμιση AMD GPU μέσω DirectML
 if torch_directml.is_available():
     device = torch_directml.device()
@@ -63,7 +111,7 @@ DATA_DIR = r"C:\Users\crish\Desktop\ptyxiakh\dataset"
 BATCH_SIZE = 16  # Μειωμένο από 32: το torch-directml σε AMD GPU δεν ελευθερώνει
                     # καλά τη μνήμη μεταξύ epochs (γνωστό memory leak), οπότε
                     # μικρότερο batch size μειώνει την πίεση στη VRAM
-EPOCHS = 10  # Λιγότερα epochs: συνεχίζουμε από ήδη καλά εκπαιδευμένο μοντέλο,
+EPOCHS = 20  # Λιγότερα epochs: συνεχίζουμε από ήδη καλά εκπαιδευμένο μοντέλο,
                 # δεν ξεκινάμε από την αρχή - αύξησε το αν θες περισσότερη εκπαίδευση
 BACKBONE_LR = 0.0002   # Χαμηλότερο από πριν - μικρές, προσεκτικές διορθώσεις
                         # πάνω σε ήδη καλά βάρη, όχι εκπαίδευση από το μηδέν
@@ -155,11 +203,31 @@ optimizer = optim.SGD([
 # Μειώνει το LR κατά 10x κάθε 7 epochs, βοηθάει τη σύγκλιση στα τελευταία epochs
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
+# 6b. Learning curve logging (CSV + PNG) - βλ. update_learning_curve_plot() παραπάνω.
+# Αν υπάρχει ήδη log από προηγούμενο training run, ΣΥΝΕΧΙΖΟΥΜΕ την αρίθμηση
+# epoch από εκεί που έμεινε (append), ώστε το γράφημα να δείχνει όλο το
+# ιστορικό εκπαίδευσης αντί να χάνεται σε κάθε νέο resumed run.
+LOG_CSV_PATH = "training_log.csv"
+PLOT_PATH = "training_curves.png"
+
+log_already_exists = os.path.exists(LOG_CSV_PATH)
+starting_epoch_number = 1
+if log_already_exists:
+    with open(LOG_CSV_PATH, "r", newline="", encoding="utf-8") as f:
+        existing_rows = list(csv.reader(f))
+    if len(existing_rows) > 1:  # header + τουλάχιστον ένα epoch
+        starting_epoch_number = int(existing_rows[-1][0]) + 1
+else:
+    with open(LOG_CSV_PATH, "w", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(["epoch", "train_loss", "train_acc", "test_loss", "test_acc"])
+
 # 7. Training Loop με Progress Bar (tqdm)
 print("\n--- Έναρξη Εκπαίδευσης ---")
 for epoch in range(EPOCHS):
     print(f"\nEpoch {epoch+1}/{EPOCHS}")
     print("-" * 30)
+
+    epoch_metrics = {}
 
     for phase in ['train', 'test']:
         if phase == 'train':
@@ -200,11 +268,23 @@ for epoch in range(EPOCHS):
 
         epoch_loss = running_loss / len(image_datasets[phase])
         epoch_acc = running_corrects.double() / len(image_datasets[phase])
+        epoch_metrics[phase] = (epoch_loss, float(epoch_acc))
 
         print(f"{phase.capitalize()} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
 
         if phase == 'train':
             scheduler.step()
+
+    # Καταγραφή καμπυλών εκπαίδευσης (CSV + PNG) ΜΕΤΑ από κάθε epoch - ίδια
+    # λογική ανθεκτικότητας με το checkpoint παρακάτω: ό,τι κι αν συμβεί μετά,
+    # το log και το γράφημα μέχρι αυτό το epoch είναι ήδη ασφαλή στον δίσκο.
+    global_epoch = starting_epoch_number + epoch
+    train_loss, train_acc = epoch_metrics['train']
+    test_loss, test_acc = epoch_metrics['test']
+    with open(LOG_CSV_PATH, "a", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow([global_epoch, f"{train_loss:.4f}", f"{train_acc:.4f}",
+                                 f"{test_loss:.4f}", f"{test_acc:.4f}"])
+    update_learning_curve_plot(LOG_CSV_PATH, PLOT_PATH)
 
     # Αποθήκευση checkpoint ΜΕΤΑ από κάθε epoch (όχι μόνο στο τέλος).
     # Έτσι, αν ξανακολλήσει η μνήμη GPU σε επόμενο epoch, δεν χάνεις την πρόοδο -

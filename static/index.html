@@ -65,7 +65,7 @@
 
                 <!-- Live Camera Mode -->
                 <div id="cameraSection" style="display: none; text-align: center;">
-                    <div class="video-wrap">
+                    <div class="video-wrap" id="cameraVideoWrap">
                         <video id="webcamVideo" autoplay playsinline muted></video>
                         <button class="camera-switch-btn" id="cameraSwitchBtn" onclick="switchCamera()" title="Εναλλαγή μπροστινής/πίσω κάμερας" style="display: none;">
                             <i class="fa-solid fa-camera-rotate"></i>
@@ -73,8 +73,20 @@
                     </div>
                     <canvas id="captureCanvas" style="display: none;"></canvas>
 
+                    <div class="preview-container" id="cameraPreviewContainer">
+                        <img id="cameraPreviewImage" class="preview-image" src="" alt="Λήψη κάμερας">
+                    </div>
+
                     <button class="btn" id="captureBtn" onclick="capturePhoto()" style="background-color: #2563eb;">
                         <i class="fa-solid fa-camera"></i> Λήψη Φωτογραφίας
+                    </button>
+
+                    <button class="btn" id="cameraPredictBtn" onclick="predictCapturedPhoto()" style="display: none;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Εκτέλεση Αναγνώρισης
+                    </button>
+
+                    <button class="btn-outline" id="retakeBtn" onclick="retakePhoto()" style="display: none; width: 100%; justify-content: center; margin-top: 0.6rem;">
+                        <i class="fa-solid fa-rotate-left"></i> Νέα Φωτογραφία
                     </button>
                 </div>
             </div>
@@ -129,7 +141,7 @@
 
                     <div class="low-confidence-warning" id="lowConfidenceWarning" style="display: none;">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>Το μοντέλο δεν είναι σίγουρο για αυτή την πρόβλεψη — δοκίμασε καλύτερο φωτισμό, γωνία, ή πιο καθαρή εικόνα του φρούτου.</span>
+                        <span id="lowConfidenceWarningText">Το μοντέλο δεν είναι σίγουρο για αυτή την πρόβλεψη — δοκίμασε καλύτερο φωτισμό, γωνία, ή πιο καθαρή εικόνα του φρούτου.</span>
                     </div>
 
                     <div class="top3-box">
@@ -138,7 +150,7 @@
                     </div>
 
                     <div class="gradcam-box" id="gradcamBox" style="display: none;">
-                        <div style="font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 0.6rem; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+                        <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.6rem; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
                             <i class="fa-solid fa-eye"></i> Πού «κοιτάει» το μοντέλο (Grad-CAM)
                         </div>
                         <img id="gradcamImage" src="" alt="Grad-CAM heatmap" class="gradcam-image">

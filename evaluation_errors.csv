@@ -1,0 +1,51 @@
+﻿true_fruit,predicted_as,model_confidence_pct,image_path
+Pepper Red,Tomato,99.9,dataset\test\Pepper Red\234_100.jpg
+Pepper Red,Tomato,99.7,dataset\test\Pepper Red\236_100.jpg
+Pepper Red,Tomato,99.7,dataset\test\Pepper Red\240_100.jpg
+Pepper Red,Tomato,99.6,dataset\test\Pepper Red\235_100.jpg
+Pepper Red,Tomato,99.5,dataset\test\Pepper Red\248_100.jpg
+Lemon,Orange,97.1,dataset\test\Lemon\lemon_web_12.png
+Lemon,Pepper Yellow,83.0,dataset\test\Lemon\lemon_web_07.webp
+Lemon,Apple Golden,75.7,dataset\test\Lemon\lemon_web_09.jpg
+Lemon,Orange,72.0,dataset\test\Lemon\lemon_web_08.jpg
+Lemon,Pepper Yellow,69.7,dataset\test\Lemon\lemon_web_10.webp
+Cocos,Kiwi,98.3,dataset\test\Cocos\Cocos_web_11.jpg
+Cocos,Kiwi,97.2,dataset\test\Cocos\Cocos_web_17.jpg
+Cocos,Potato Sweet,88.0,dataset\test\Cocos\Cocos_web_16.jpg
+Cocos,Kiwi,83.9,dataset\test\Cocos\Cocos_web_02.jpg
+Cocos,Kiwi,68.3,dataset\test\Cocos\Cocos_web_03.jpg
+Zucchini,Cucumber,95.2,dataset\test\Zucchini\zucchini_green_web_13.webp
+Zucchini,Cucumber,92.5,dataset\test\Zucchini\zucchini_green_web_06.jpg
+Zucchini,Cucumber,90.2,dataset\test\Zucchini\zucchini_green_web_12.jpg
+Zucchini,Cucumber,79.7,dataset\test\Zucchini\zucchini_green_web_10.jpg
+Zucchini,Pepper Green,63.6,dataset\test\Zucchini\zucchini_green_web_08.jpg
+Peach,Kiwi,72.7,dataset\test\Peach\web_018.jpg
+Peach,Apple,67.8,dataset\test\Peach\r_33_100.jpg
+Peach,Nectarine,61.4,dataset\test\Peach\r_51_100.jpg
+Peach,Pear,54.4,dataset\test\Peach\web_015.jpg
+Peach,Nectarine,50.8,dataset\test\Peach\r_54_100.jpg
+Cabbage red,Onion Red,77.9,dataset\test\Cabbage red\Cabbage_red_web_06.jpg
+Cabbage red,Onion Red,77.3,dataset\test\Cabbage red\Cabbage_red_web_12.jpg
+Cabbage red,Fig,69.6,dataset\test\Cabbage red\Cabbage_red_web_10.jpg
+Cabbage red,Onion Red,69.4,dataset\test\Cabbage red\Cabbage_red_web_07.jpg
+Cabbage red,Onion Red,60.8,dataset\test\Cabbage red\Cabbage_red_web_11.jpg
+Almonds,Orange,49.8,dataset\test\Almonds\almond_web_10.jpg
+Almonds,Pepper Yellow,47.1,dataset\test\Almonds\web_017.jpg
+Almonds,Blackberry,42.5,dataset\test\Almonds\web_016.jpg
+Almonds,Kiwi,38.7,dataset\test\Almonds\almond_web_07.jpg
+Almonds,Apple Red,38.6,dataset\test\Almonds\almond_web_06.jpg
+Nectarine,Apple,63.7,dataset\test\Nectarine\r_63_100.jpg
+Nectarine,Apple,58.5,dataset\test\Nectarine\r_68_100.jpg
+Nectarine,Apple,57.0,dataset\test\Nectarine\r_69_100.jpg
+Nectarine,Apple,55.8,dataset\test\Nectarine\nectarine_web_09.webp
+Nectarine,Apple Red,54.7,dataset\test\Nectarine\nectarine_web_13.jpg
+Carrot,Carambola,51.9,dataset\test\Carrot\carrot_web_07.jpg
+Carrot,Carambola,41.2,dataset\test\Carrot\carrot_web_01.webp
+Carrot,Banana,31.8,dataset\test\Carrot\carrot_web_13.jpg
+Carrot,Almonds,29.8,dataset\test\Carrot\carrot_web_11.webp
+Carrot,Carambola,23.5,dataset\test\Carrot\carrot_web_08.jpeg
+Eggplant,Pepper Green,97.4,dataset\test\Eggplant\eggplant_web_11.jpg
+Eggplant,Blackberry,97.2,dataset\test\Eggplant\r_252_100.jpg
+Eggplant,Pepper Green,96.5,dataset\test\Eggplant\eggplant_web_04.jpg
+Eggplant,Blackberry,92.8,dataset\test\Eggplant\r_253_100.jpg
+Eggplant,Pepper Green,91.3,dataset\test\Eggplant\eggplant_web_10.webp
