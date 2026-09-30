@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Σύστημα Αναγνώρισης & Ταξινόμησης Φρούτων</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Εναλλαγή σκούρου φωτισμού">
+        <i class="fa-solid fa-sun theme-toggle-sun"></i>
+        <i class="fa-solid fa-moon theme-toggle-moon"></i>
+        <span class="theme-toggle-thumb"></span>
+    </button>
+
+    <div class="container">
+        <header>
+            <div class="eyebrow">Πτυχιακή Εργασία · Computer Vision</div>
+            <h1><i class="fa-solid fa-lemon"></i> AI Fruit Recognizer</h1>
+            <p>Αυτόματη Αναγνώριση, Ταξινόμηση & Ανάλυση Φρούτων με Χρήση Τεχνητής Νοημοσύνης</p>
+            <button class="methodology-link" onclick="openMethodologyModal()">
+                <i class="fa-solid fa-circle-info"></i> Μεθοδολογία & Περιορισμοί
+            </button>
+        </header>
+
+        <div class="main-grid">
+            <!-- Mode Selection & Input Area -->
+            <div class="card">
+                <div class="card-title"><span><i class="fa-solid fa-camera"></i> Πηγή Εικόνας</span></div>
+                
+                <!-- Tab Controls -->
+                <div class="tab-btn-group">
+                    <button class="btn-tab active" id="uploadTabBtn" onclick="switchMode('upload')">
+                        <i class="fa-solid fa-file-image"></i> Αρχείο
+                    </button>
+                    <button class="btn-tab" id="cameraTabBtn" onclick="switchMode('camera')">
+                        <i class="fa-solid fa-video"></i> Live Κάμερα
+                    </button>
+                </div>
+
+                <!-- Upload Mode -->
+                <div id="uploadSection">
+                    <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <i class="fa-regular fa-image"></i>
+                        <p><b>Κάντε κλικ</b> ή σύρετε μια φωτογραφία φρούτου εδώ</p>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" multiple>
+
+                    <div class="preview-container" id="previewContainer">
+                        <img id="previewImage" class="preview-image" src="" alt="Preview">
+                    </div>
+
+                    <div class="batch-list" id="batchList"></div>
+
+                    <button class="btn" id="predictBtn" disabled onclick="uploadAndPredict()">
+                        <span id="btnText"><i class="fa-solid fa-wand-magic-sparkles"></i> Εκτέλεση Αναγνώρισης</span>
+                        <div class="spinner" id="btnSpinner"></div>
+                    </button>
+                </div>
+
+                <!-- Live Camera Mode -->
+                <div id="cameraSection" style="display: none; text-align: center;">
+                    <div class="video-wrap" id="cameraVideoWrap">
+                        <video id="webcamVideo" autoplay playsinline muted></video>
+                        <button class="camera-switch-btn" id="cameraSwitchBtn" onclick="switchCamera()" title="Εναλλαγή μπροστινής/πίσω κάμερας" style="display: none;">
+                            <i class="fa-solid fa-camera-rotate"></i>
+                        </button>
+                    </div>
+                    <canvas id="captureCanvas" style="display: none;"></canvas>
+
+                    <div class="preview-container" id="cameraPreviewContainer">
+                        <img id="cameraPreviewImage" class="preview-image" src="" alt="Λήψη κάμερας">
+                    </div>
+
+                    <button class="btn" id="captureBtn" onclick="capturePhoto()" style="background-color: #2563eb;">
+                        <i class="fa-solid fa-camera"></i> Λήψη Φωτογραφίας
+                    </button>
+
+                    <button class="btn" id="cameraPredictBtn" onclick="predictCapturedPhoto()" style="display: none;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Εκτέλεση Αναγνώρισης
+                    </button>
+
+                    <button class="btn-outline" id="retakeBtn" onclick="retakePhoto()" style="display: none; width: 100%; justify-content: center; margin-top: 0.6rem;">
+                        <i class="fa-solid fa-rotate-left"></i> Νέα Φωτογραφία
+                    </button>
+                </div>
+            </div>
+
+            <!-- Prediction Results Panel -->
+            <div class="card">
+                <div class="card-title"><span><i class="fa-solid fa-square-poll-vertical"></i> Αποτέλεσμα Πρόβλεψης</span></div>
+
+                <div class="result-placeholder" id="placeholder">
+                    <i class="fa-solid fa-brain"></i>
+                    <p>Ανεβάστε μια εικόνα ή ενεργοποιήστε την κάμερα για να δείτε τα αποτελέσματα του AI.</p>
+                </div>
+
+                <div class="result-skeleton" id="resultSkeleton" style="display: none;">
+                    <div class="skeleton-header">
+                        <div class="skeleton-circle"></div>
+                        <div class="skeleton-lines">
+                            <div class="skeleton-line skeleton-line-sm"></div>
+                            <div class="skeleton-line skeleton-line-lg"></div>
+                            <div class="skeleton-line skeleton-line-sm"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-bar-group">
+                        <div class="skeleton-line skeleton-line-md"></div>
+                        <div class="skeleton-bar"></div>
+                        <div class="skeleton-line skeleton-line-md"></div>
+                        <div class="skeleton-bar"></div>
+                        <div class="skeleton-line skeleton-line-md"></div>
+                        <div class="skeleton-bar"></div>
+                    </div>
+                </div>
+
+                <div class="result-content" id="resultContent">
+                    <div class="result-header">
+                        <div class="gauge-wrap">
+                            <svg width="92" height="92" viewBox="0 0 92 92">
+                                <circle class="gauge-track" cx="46" cy="46" r="40"></circle>
+                                <circle class="gauge-fill" id="gaugeFill" cx="46" cy="46" r="40"
+                                        stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                            </svg>
+                            <div class="gauge-pct" id="gaugePct">-</div>
+                        </div>
+                        <div class="result-main">
+                            <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em;">Κύρια Αναγνώριση</div>
+                            <div class="fruit-tag">
+                                <svg class="category-icon" id="categoryIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"></svg>
+                                <span id="fruitResult">-</span>
+                            </div>
+                            <div class="category-label" id="categoryLabel">-</div>
+                        </div>
+                    </div>
+
+                    <div class="low-confidence-warning" id="lowConfidenceWarning" style="display: none;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span id="lowConfidenceWarningText">Το μοντέλο δεν είναι σίγουρο για αυτή την πρόβλεψη — δοκίμασε καλύτερο φωτισμό, γωνία, ή πιο καθαρή εικόνα του φρούτου.</span>
+                    </div>
+
+                    <div class="top3-box">
+                        <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.6rem; text-transform: uppercase;">Top-3 Πιθανότητες</div>
+                        <div id="top3List"></div>
+                    </div>
+
+                    <div class="gradcam-box" id="gradcamBox" style="display: none;">
+                        <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.6rem; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-eye"></i> Πού «κοιτάει» το μοντέλο (Grad-CAM)
+                        </div>
+                        <img id="gradcamImage" src="" alt="Grad-CAM heatmap" class="gradcam-image">
+                        <p class="gradcam-caption">Οι πιο «θερμές» (κόκκινο/κίτρινο) περιοχές δείχνουν πού εστίασε το μοντέλο για να καταλήξει σε αυτή την πρόβλεψη.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fruit Wiki / Info Section -->
+        <div class="card" id="infoCard" style="display: none;">
+            <div class="card-title"><span><i class="fa-solid fa-book-open"></i> Πληροφορίες Φρούτου (Fruit Wiki)</span></div>
+            <div class="info-grid">
+                <div class="info-item"><b>Κατηγορία / Είδος</b><span id="infoCategory">-</span></div>
+                <div class="info-item"><b>Καταγωγή</b><span id="infoOrigin">-</span></div>
+                <div class="info-item"><b>Εποχή Συγκομιδής</b><span id="infoSeason">-</span></div>
+                <div class="info-item"><b>Συνήθεις Χρήσεις</b><span id="infoUses">-</span></div>
+            </div>
+            <div class="fun-fact-box">
+                <i class="fa-solid fa-lightbulb"></i> <b>Fun Fact:</b> <span id="infoFunFact">-</span>
+            </div>
+        </div>
+
+        <!-- History & Export Section -->
+        <div class="card">
+            <div class="card-title">
+                <span><i class="fa-solid fa-clock-rotate-left"></i> Ιστορικό Αναλύσεων</span>
+                <div style="display: flex; gap: 5px;">
+                    <div class="export-dropdown">
+                        <button class="btn-outline" onclick="toggleExportMenu()">
+                            <i class="fa-solid fa-download"></i> Εξαγωγή <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="export-menu" id="exportMenu">
+                            <a href="/export-excel" target="_blank"><i class="fa-solid fa-file-excel"></i> Excel (.xlsx)</a>
+                            <a href="/export-csv" target="_blank"><i class="fa-solid fa-file-csv"></i> CSV</a>
+                            <a href="/export-json" target="_blank"><i class="fa-solid fa-file-code"></i> JSON</a>
+                        </div>
+                    </div>
+                    <button onclick="loadHistory()" class="btn-outline">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="history-toolbar">
+                <input type="text" id="historySearchInput" placeholder="Αναζήτηση με όνομα φρούτου...">
+                <input type="date" id="historyDateFromInput" title="Από ημερομηνία">
+                <input type="date" id="historyDateToInput" title="Έως ημερομηνία">
+                <button class="btn-outline" onclick="clearHistoryFilters()"><i class="fa-solid fa-xmark"></i> Καθαρισμός</button>
+            </div>
+
+            <div class="history-date-presets" id="historyDatePresets">
+                <button class="preset-btn" data-preset="today" onclick="applyDatePreset('today')">Σήμερα</button>
+                <button class="preset-btn" data-preset="7d" onclick="applyDatePreset('7d')">Τελευταίες 7 ημέρες</button>
+                <button class="preset-btn" data-preset="30d" onclick="applyDatePreset('30d')">Τελευταίος μήνας</button>
+                <button class="preset-btn active" data-preset="all" onclick="applyDatePreset('all')">Όλες</button>
+            </div>
+
+            <div class="bulk-action-bar" id="bulkActionBar" style="display: none;">
+                <span id="bulkSelectedCount">0 επιλεγμένες</span>
+                <button class="btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="bulkDeleteSelected()">
+                    <i class="fa-solid fa-trash-can"></i> Διαγραφή επιλεγμένων
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 34px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllOnPage()"></th>
+                            <th>ID</th>
+                            <th>Όνομα Αρχείου</th>
+                            <th>Αναγνώριση</th>
+                            <th class="sortable-th" onclick="setHistorySort('confidence')">Βεβαιότητα <i class="fa-solid fa-sort" id="sortIconConfidence"></i></th>
+                            <th class="sortable-th" onclick="setHistorySort('created_at')">Ημερομηνία/Ώρα <i class="fa-solid fa-sort-down" id="sortIconCreated_at"></i></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Φόρτωση ιστορικού...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination" id="historyPagination"></div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-modal">
+            <div class="confirm-title"><i class="fa-solid fa-triangle-exclamation"></i> Επιβεβαίωση Διαγραφής</div>
+            <p id="confirmMessage"></p>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" id="confirmCancelBtn">Άκυρο</button>
+                <button class="btn btn-danger" id="confirmOkBtn">Διαγραφή</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="methodology-overlay" id="methodologyOverlay">
+        <div class="methodology-modal">
+            <div class="methodology-header">
+                <span><i class="fa-solid fa-flask"></i> Μεθοδολογία & Περιορισμοί</span>
+                <button class="methodology-close" id="methodologyClose" aria-label="Κλείσιμο">&times;</button>
+            </div>
+            <div class="methodology-body">
+                <h3>Αρχιτεκτονική Μοντέλου</h3>
+                <p>Το μοντέλο βασίζεται στο <b>MobileNetV2</b>, προεκπαιδευμένο σε ImageNet. Τα τελευταία blocks του backbone ξεπαγώθηκαν και εκπαιδεύτηκαν εκ νέου (fine-tuning), μαζί με έναν custom classifier (πλήρως συνδεδεμένο layer με Dropout) στο τέλος, ειδικά προσαρμοσμένο για ταξινόμηση φρούτων/λαχανικών.</p>
+
+                <h3>Dataset</h3>
+                <p>Βάση αποτελεί dataset τύπου <b>Fruits-360</b> (εικόνες με καθαρό, ελεγχόμενο φόντο και σταθερό φωτισμό), εμπλουτισμένο με πραγματικές φωτογραφίες από το διαδίκτυο σε όλες τις 45 κλάσεις, ώστε να υπάρχει μεγαλύτερη ποικιλία σε φόντο/φωτισμό/γωνία λήψης.</p>
+
+                <h3>Απόδοση</h3>
+                <p>Στο test set (45 κλάσεις, ~8.900 εικόνες), το μοντέλο πετυχαίνει <b>98,7%</b> ακρίβεια.</p>
+
+                <h3>Bias Φόντου & Πώς Αντιμετωπίστηκε</h3>
+                <p>Ανάλυση με <b>Grad-CAM</b> στα πρώιμα στάδια εκπαίδευσης αποκάλυψε ότι το μοντέλο «κολλούσε» σε χαρακτηριστικά του φόντου (το σχεδόν ομοιόμορφο, ανοιχτόχρωμο φόντο του Fruits-360) αντί να μαθαίνει τα οπτικά χαρακτηριστικά του ίδιου του φρούτου (σχήμα, υφή, χρώμα). Αντιμετωπίστηκε με δύο συμπληρωματικούς τρόπους: τυχαία αντικατάσταση φόντου (background randomization) κατά την εκπαίδευση, και εμπλουτισμό του dataset με τις πραγματικές φωτογραφίες που αναφέρθηκαν παραπάνω.</p>
+
+                <h3>Γνωστοί Περιορισμοί</h3>
+                <ul>
+                    <li>Παρά τον εμπλουτισμό με πραγματικές φωτογραφίες, ο πυρήνας του dataset παραμένει καθαρού/ελεγχόμενου φόντου — η ακρίβεια σε εντελώς τυχαίες φωτογραφίες (κινητό, φυσικό περιβάλλον, μεικτός φωτισμός) μπορεί να διαφέρει από αυτή στο test set.</li>
+                    <li>Οπτικά όμοια φρούτα/λαχανικά συγχέονται πιο συχνά μεταξύ τους (π.χ. Ροδάκινο/Νεκταρίνι, Πιπεριά Κόκκινη/Ντομάτα).</li>
+                    <li>Το Grad-CAM δείχνει πού «κοιτάει» το μοντέλο, όχι αν η πρόβλεψη είναι σωστή — χρησιμοποιείται για ερμηνευσιμότητα (interpretability), όχι για επαλήθευση ακρίβειας.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="gradcam-overlay" id="gradcamOverlay">
+        <div class="gradcam-lightbox">
+            <div class="gradcam-lightbox-header">
+                <span><i class="fa-solid fa-eye"></i> Grad-CAM <span id="gradcamLightboxId"></span></span>
+                <button class="gradcam-lightbox-close" id="gradcamLightboxClose" aria-label="Κλείσιμο">&times;</button>
+            </div>
+            <div id="gradcamLightboxBody"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

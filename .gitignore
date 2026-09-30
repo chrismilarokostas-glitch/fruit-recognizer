@@ -1,0 +1,25 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Dataset (1.4GB, 40k+ εικόνες) - όχι στο repo, χρειάζεται μόνο τοπικά για
+# εκπαίδευση/αξιολόγηση (train_mobilenet.py, evaluate_model.py), όχι στο API
+dataset/
+
+# Τοπικά δεδομένα/αρχεία εκτέλεσης - δεν πρέπει να ζουν στο repo
+fruits_history.db
+
+# Πειραματικά από-την-αρχή training runs (train_mobilenet.py MODEL_OUT_PATH) -
+# μπαίνουν στο repo μόνο αν/όταν μετονομαστούν σε fruit_mobilenetv2.pth
+*_scratch.pth
+*_scratch.csv
+*_scratch.png
+
+# Dev tooling, όχι μέρος της εφαρμογής
+.claude/
+
+# Προσωπικά/τοπικά αρχεία - μένουν στον δίσκο, όχι στο repo
+*.docx
+report_figures/
+generate_gradcam_samples.py
