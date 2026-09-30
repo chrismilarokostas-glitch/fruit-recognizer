@@ -1,0 +1,46 @@
+﻿fruit,samples,correct,errors,accuracy_pct,avg_confidence_correct_pct,avg_confidence_wrong_pct,confused_with_1,confused_with_1_count,confused_with_2,confused_with_2_count,confused_with_3,confused_with_3_count
+Peach,178,162,16,91.01,93.8,66.7,Nectarine,13,Apple,2,Apricot,1
+Eggplant,174,164,10,94.25,97.7,73.3,Blackberry,5,Blueberry,3,Cucumber,1
+Almonds,91,86,5,94.51,97.2,62.1,Zucchini Green,1,Watermelon,1,Cocos,1
+Plum,274,263,11,95.99,98.9,57.2,Apple,6,Pomegranate,1,Cherry Black,1
+Blackberry,164,158,6,96.34,98.1,63.7,Quince,5,Banana,1,,
+Potato Sweet,159,154,5,96.86,98.5,55.7,Carrot,2,Peach,1,Pear,1
+Pepper Orange,244,237,7,97.13,98.6,57.3,Pepper Yellow,5,Zucchini Green,1,Cherry,1
+Nectarine,181,176,5,97.24,97.4,58.6,Apple,3,Strawberry,1,Tomato,1
+Pepper Red,254,248,6,97.64,98.6,74.3,Tomato,6,,,,
+Pineapple,170,166,4,97.65,100.0,60.7,Onion White,2,Cherry Black,1,Raspberry,1
+Mango,176,172,4,97.73,98.7,88.9,Pear,4,,,,
+Orange,179,175,4,97.77,98.7,47.6,Lemon,1,Clementine,1,Apricot,1
+Zucchini Green,94,92,2,97.87,99.0,59.7,Cucumber,2,,,,
+Potato White,153,150,3,98.04,100.0,77.5,Watermelon,1,Cherry Black,1,Peach,1
+Onion White,162,159,3,98.15,99.3,82.0,Apple Golden,2,Onion Red,1,,
+Cherry,250,246,4,98.4,100.0,48.7,Tomato,1,Apple,1,Cocos,1
+Onion Red,272,268,4,98.53,100.0,68.5,Watermelon,1,Strawberry,1,Cherry Black,1
+Clementine,179,177,2,98.88,98.4,65.2,Orange,1,Kumquats,1,,
+Apple,180,178,2,98.89,99.9,50.5,Tomato,2,,,,
+Lemon,182,180,2,98.9,98.6,46.8,Pepper Green,1,Kumquats,1,,
+Pepper Green,152,151,1,99.34,99.5,96.5,Pepper Red,1,,,,
+Pomegranate,173,172,1,99.42,98.9,43.9,Plum,1,,,,
+Carambola,180,179,1,99.44,99.6,36.1,Banana,1,,,,
+Limes,180,179,1,99.44,98.8,47.1,Mango,1,,,,
+Apricot,184,183,1,99.46,98.4,36.9,Clementine,1,,,,
+Quince,382,380,2,99.48,99.2,47.4,Pepper Yellow,1,Apple Golden,1,,
+Raspberry,410,408,2,99.51,99.9,57.7,Strawberry,2,,,,
+Pepper Yellow,226,225,1,99.56,99.6,50.0,Pepper Red,1,,,,
+Cucumber,344,343,1,99.71,99.5,53.5,Zucchini Green,1,,,,
+Apple Golden,174,174,0,100.0,99.9,,,,,,,
+Avocado,156,156,0,100.0,99.0,,,,,,,
+Banana,339,339,0,100.0,100.0,,,,,,,
+Blueberry,166,166,0,100.0,99.3,,,,,,,
+Cabbage red,61,61,0,100.0,99.5,,,,,,,
+Cabbage white,57,57,0,100.0,99.7,,,,,,,
+Carrot,62,62,0,100.0,99.4,,,,,,,
+Cherry Black,178,178,0,100.0,99.6,,,,,,,
+Cocos,183,183,0,100.0,99.9,,,,,,,
+Fig,245,245,0,100.0,99.8,,,,,,,
+Kiwi,167,167,0,100.0,99.1,,,,,,,
+Kumquats,179,179,0,100.0,99.4,,,,,,,
+Pear,175,175,0,100.0,99.2,,,,,,,
+Strawberry,408,408,0,100.0,99.8,,,,,,,
+Tomato,263,263,0,100.0,99.6,,,,,,,
+Watermelon,173,173,0,100.0,99.8,,,,,,,

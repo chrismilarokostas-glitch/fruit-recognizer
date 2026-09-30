@@ -1,0 +1,18 @@
+# Runtime εξαρτήσεις για το main.py (API server). Εξαιρούνται πράγματα που
+# χρειάζονται μόνο τοπικά κατά την εκπαίδευση/dev (torch_directml, opencv, tqdm) -
+# αυτά δεν χρειάζεται να μπουν στο production image.
+#
+# torch/torchvision εγκαθίστανται ξεχωριστά στο Dockerfile από το CPU-only index
+# του PyTorch (https://download.pytorch.org/whl/cpu) - εδώ απλά καθορίζουμε τις
+# ίδιες ακριβείς εκδόσεις ώστε το pip να μην τις ξαναεγκαταστήσει διαφορετικές.
+torch==2.4.1
+torchvision==0.19.1
+
+fastapi==0.140.0
+uvicorn[standard]==0.51.0
+python-multipart==0.0.32
+sqlalchemy==2.0.51
+pillow==12.3.0
+matplotlib==3.10.9
+openpyxl==3.1.5
+numpy==2.2.6

@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+dataset/
+fruits_history.db
+evaluate_model.py
+train_mobilenet.py
+.claude/
+.git/
+.gitignore

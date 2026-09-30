@@ -1,0 +1,91 @@
+﻿true_fruit,predicted_as,model_confidence_pct,image_path
+Plum,Apple,100.0,dataset\test\Plum\plum_web_01.webp
+Plum,Apple,100.0,dataset\test\Plum\plum_web_15.jpg
+Plum,Apple,70.5,dataset\test\Plum\plum_web_10.jpg
+Plum,Blueberry,59.9,dataset\test\Plum\plum_web_14.jpg
+Plum,Apple,59.4,dataset\test\Plum\plum_web_03.jpg
+Quince,Apple Golden,60.2,dataset\test\Quince\quince_web_04.jpg
+Quince,Pepper Yellow,34.6,dataset\test\Quince\quince_web_14.jpg
+Apple,Tomato,66.2,dataset\test\Apple\apple_web_05.jpg
+Apple,Tomato,34.7,dataset\test\Apple\apple_web_04.jpg
+Cucumber,Zucchini Green,53.5,dataset\test\Cucumber\cucumber_web_03.jpg
+Carambola,Banana,36.1,dataset\test\Carambola\web_017.jpg
+Pepper Red,Tomato,96.7,dataset\test\Pepper Red\240_100.jpg
+Pepper Red,Tomato,88.3,dataset\test\Pepper Red\241_100.jpg
+Pepper Red,Tomato,85.6,dataset\test\Pepper Red\237_100.jpg
+Pepper Red,Tomato,74.5,dataset\test\Pepper Red\238_100.jpg
+Pepper Red,Tomato,53.0,dataset\test\Pepper Red\233_100.jpg
+Almonds,Zucchini Green,72.1,dataset\test\Almonds\web_018.jpg
+Almonds,Blueberry,70.9,dataset\test\Almonds\web_015.jpg
+Almonds,Cocos,69.5,dataset\test\Almonds\almond_web_07.jpg
+Almonds,Cherry Black,66.0,dataset\test\Almonds\web_016.jpg
+Almonds,Watermelon,32.1,dataset\test\Almonds\web_017.jpg
+Clementine,Orange,77.6,dataset\test\Clementine\clementine_web_10.jpg
+Clementine,Kumquats,52.7,dataset\test\Clementine\clementine_web_04.jpg
+Pepper Green,Pepper Red,96.5,dataset\test\Pepper Green\web_018.jpg
+Onion White,Apple Golden,99.9,dataset\test\Onion White\onion_white_web_06.jpg
+Onion White,Onion Red,83.8,dataset\test\Onion White\onion_white_web_15.jpg
+Onion White,Apple Golden,62.2,dataset\test\Onion White\onion_white_web_04.jpg
+Pepper Orange,Pepper Yellow,84.4,dataset\test\Pepper Orange\r2_232_100.jpg
+Pepper Orange,Pepper Yellow,67.9,dataset\test\Pepper Orange\pepper_orange_web_06.jpg
+Pepper Orange,Pepper Yellow,66.6,dataset\test\Pepper Orange\r2_238_100.jpg
+Pepper Orange,Pepper Yellow,63.9,dataset\test\Pepper Orange\web_016.jpg
+Pepper Orange,Pepper Yellow,49.4,dataset\test\Pepper Orange\r2_234_100.jpg
+Potato White,Watermelon,98.1,dataset\test\Potato White\web_017.jpg
+Potato White,Cherry Black,93.1,dataset\test\Potato White\web_016.jpg
+Potato White,Peach,41.3,dataset\test\Potato White\web_015.jpg
+Zucchini Green,Cucumber,60.8,dataset\test\Zucchini Green\zucchini_green_web_02.jpg
+Zucchini Green,Cucumber,58.5,dataset\test\Zucchini Green\zucchini_green_web_13.webp
+Orange,Clementine,63.2,dataset\test\Orange\orange_web_15.jpg
+Orange,Kumquats,46.0,dataset\test\Orange\orange_web_17.jpg
+Orange,Lemon,45.6,dataset\test\Orange\orange_web_11.jpg
+Orange,Apricot,35.8,dataset\test\Orange\orange_web_19.jpg
+Cherry,Tomato,85.4,dataset\test\Cherry\web_015.jpg
+Cherry,Clementine,50.9,dataset\test\Cherry\web_016.jpg
+Cherry,Apple,33.3,dataset\test\Cherry\web_017.jpg
+Cherry,Cocos,25.2,dataset\test\Cherry\web_018.jpg
+Pineapple,Onion White,81.0,dataset\test\Pineapple\web_015.jpg
+Pineapple,Raspberry,56.9,dataset\test\Pineapple\web_016.jpg
+Pineapple,Onion White,53.7,dataset\test\Pineapple\web_018.jpg
+Pineapple,Cherry Black,51.0,dataset\test\Pineapple\web_017.jpg
+Mango,Pear,97.6,dataset\test\Mango\mango_web_03.jpg
+Mango,Pear,96.1,dataset\test\Mango\mango_web_04.jpg
+Mango,Pear,82.0,dataset\test\Mango\mango_web_08.jpg
+Mango,Pear,80.0,dataset\test\Mango\mango_web_01.webp
+Pepper Yellow,Pepper Red,50.0,dataset\test\Pepper Yellow\web_018.jpg
+Eggplant,Blueberry,94.6,dataset\test\Eggplant\r_251_100.jpg
+Eggplant,Blackberry,94.3,dataset\test\Eggplant\r_253_100.jpg
+Eggplant,Blackberry,92.4,dataset\test\Eggplant\r_254_100.jpg
+Eggplant,Blackberry,88.1,dataset\test\Eggplant\r_256_100.jpg
+Eggplant,Blackberry,76.9,dataset\test\Eggplant\r_260_100.jpg
+Pomegranate,Plum,43.9,dataset\test\Pomegranate\Pomegranate_web_01.jpg
+Potato Sweet,Carrot,68.1,dataset\test\Potato Sweet\potato_sweet_web_03.jpg
+Potato Sweet,Pear,64.9,dataset\test\Potato Sweet\potato_sweet_web_01.jpg
+Potato Sweet,Plum,54.8,dataset\test\Potato Sweet\potato_sweet_web_05.jpg
+Potato Sweet,Carrot,49.1,dataset\test\Potato Sweet\potato_sweet_web_07.jpg
+Potato Sweet,Peach,41.4,dataset\test\Potato Sweet\potato_sweet_web_04.jpg
+Onion Red,Strawberry,86.1,dataset\test\Onion Red\web_018.jpg
+Onion Red,Watermelon,72.7,dataset\test\Onion Red\web_015.jpg
+Onion Red,Cocos,62.0,dataset\test\Onion Red\web_017.jpg
+Onion Red,Cherry Black,53.3,dataset\test\Onion Red\web_016.jpg
+Raspberry,Strawberry,62.1,dataset\test\Raspberry\raspberry_web_19.jpg
+Raspberry,Strawberry,53.3,dataset\test\Raspberry\raspberry_web_12.jpg
+Lemon,Kumquats,64.4,dataset\test\Lemon\web_017.jpg
+Lemon,Pepper Green,29.2,dataset\test\Lemon\lemon_web_09.jpg
+Blackberry,Quince,91.9,dataset\test\Blackberry\r1_139_100.jpg
+Blackberry,Quince,72.0,dataset\test\Blackberry\r1_131_100.jpg
+Blackberry,Quince,64.7,dataset\test\Blackberry\r1_127_100.jpg
+Blackberry,Quince,56.5,dataset\test\Blackberry\r1_123_100.jpg
+Blackberry,Banana,48.8,dataset\test\Blackberry\r1_143_100.jpg
+Apricot,Clementine,36.9,dataset\test\Apricot\apricot_web_05.jpg
+Nectarine,Apple,78.9,dataset\test\Nectarine\nectarine_web_08.jpg
+Nectarine,Apple,68.6,dataset\test\Nectarine\nectarine_web_12.jpg
+Nectarine,Tomato,54.4,dataset\test\Nectarine\nectarine_web_15.jpg
+Nectarine,Apple,53.4,dataset\test\Nectarine\r_76_100.jpg
+Nectarine,Strawberry,37.6,dataset\test\Nectarine\nectarine_web_03.jpg
+Peach,Nectarine,92.7,dataset\test\Peach\r_50_100.jpg
+Peach,Nectarine,90.4,dataset\test\Peach\r_68_100.jpg
+Peach,Nectarine,86.1,dataset\test\Peach\r_46_100.jpg
+Peach,Nectarine,75.3,dataset\test\Peach\r_54_100.jpg
+Peach,Nectarine,72.4,dataset\test\Peach\r_83_100.jpg
+Limes,Mango,47.1,dataset\test\Limes\limes_web_11.jpg
