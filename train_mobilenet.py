@@ -31,7 +31,7 @@ class RandomBackgroundReplace:
         self.brightness_threshold = brightness_threshold
         self.probability = probability
         # noise_mode=None: επιλέγεται τυχαία (noise ή συμπαγές χρώμα) σε ΚΑΘΕ κλήση,
-        # αντί να είναι πάντα θόρυβος - λιγότερο ακραίο/μονότονο φόντο, πιο κοντά στην
+        # αντί να είναι πάντα θόρυβος - λιγότερο μονότονο φόντο, πιο κοντά στην
         # ποικιλία πραγματικών φωτογραφιών (π.χ. καθαρό έγχρωμο studio φόντο).
         self.noise_mode = noise_mode
 
@@ -108,17 +108,6 @@ BACKBONE_LR = 0.0002
 CLASSIFIER_LR = 0.002
 IMAGE_SIZE = 224
 
-# Χρησιμοποιούμε πιο επιθετικό augmentation, και τώρα
-# background randomization, ώστε το μοντέλο να μη μάθει το συγκεκριμένο "στυλ"
-# του dataset αλλά πιο γενικά χαρακτηριστικά του ίδιου του φρούτου.
-#
-# ΠΡΟΣΟΧΗ: saturation/brightness/contrast=0.3 + RandomBackgroundReplace(0.7, πάντα
-# θόρυβος) αποδείχτηκε ΥΠΕΡΒΟΛΙΚΟ - σε δοκιμές με "γυαλιστερές" stock φωτογραφίες
-# (καθαρό λευκό φόντο, φυσικό φως) το μοντέλο μπέρδευε π.χ. ανανά με βατόμουρο και
-# καράμβολα με μπανάνα, σαν να είχε μάθει να βασίζεται σε σχήμα/υφή αντί για χρώμα.
-# Πιο ήπιο εδώ (λιγότερο έντονο color jitter, background replacement λιγότερο συχνά
-# και όχι πάντα θόρυβος - βλ. RandomBackgroundReplace) ώστε να μείνει η ανθεκτικότητα
-# στο φόντο χωρίς να θυσιάζεται το χρώμα ως discriminative χαρακτηριστικό.
 data_transforms = {
     'train': transforms.Compose([
         transforms.RandomResizedCrop(IMAGE_SIZE, scale=(0.7, 1.0)),
