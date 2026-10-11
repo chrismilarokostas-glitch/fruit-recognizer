@@ -4,6 +4,7 @@ import gc
 import csv
 import json
 import base64
+from datetime import timezone
 from typing import List
 import numpy as np
 import torch
@@ -84,6 +85,15 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 # εγγραφή "ανήκει" στο αναγνωριστικό που τη δημιούργησε, και μόνο αυτό μπορεί
 # να τη δει, να την εξαγάγει ή να τη διαγράψει.
 CLIENT_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{16,64}$")
+
+
+def utc_iso(dt):
+    """
+    Οι χρονοσημάνσεις αποθηκεύονται στη βάση σε UTC χωρίς ένδειξη ζώνης. Τις επιστρέφουμε
+    με ρητό offset (+00:00), ώστε ο browser να τις μετατρέπει στην τοπική ώρα του χρήστη
+    αντί να τις εκλαμβάνει ως τοπικές (που τις έδειχνε π.χ. 3 ώρες πίσω στην Ελλάδα).
+    """
+    return dt.replace(tzinfo=timezone.utc).isoformat() if dt else None
 
 
 def get_client_id(x_client_id: str = Header(default="")) -> str:
@@ -229,7 +239,7 @@ async def predict(
         "filename": file.filename,
         "prediction": predicted_fruit,
         "confidence_percentage": confidence_score,
-        "created_at": db_record.created_at,
+        "created_at": utc_iso(db_record.created_at),
         "top3": top3,
         "info": fruit_info,
         "gradcam_image": gradcam_image,
@@ -255,7 +265,7 @@ def get_history(db: Session = Depends(database.get_db), client_id: str = Depends
             "filename": r.filename,
             "fruit_name": r.fruit_name,
             "confidence": r.confidence,
-            "created_at": r.created_at,
+            "created_at": utc_iso(r.created_at),
         }
         for r in records
     ]
@@ -330,7 +340,7 @@ def export_excel(db: Session = Depends(database.get_db), client_id: str = Depend
     wb = Workbook()
     ws = wb.active
     ws.title = "Predictions"
-    ws.append(["ID", "Filename", "Fruit Name", "Confidence (%)", "Created At"])
+    ws.append(["ID", "Filename", "Fruit Name", "Confidence (%)", "Created At (UTC)"])
     for r in records:
         ws.append([r.id, r.filename, r.fruit_name, r.confidence, r.created_at])
 
@@ -350,7 +360,7 @@ def export_csv(db: Session = Depends(database.get_db), client_id: str = Depends(
 
     text_buffer = io.StringIO()
     writer = csv.writer(text_buffer)
-    writer.writerow(["ID", "Filename", "Fruit Name", "Confidence (%)", "Created At"])
+    writer.writerow(["ID", "Filename", "Fruit Name", "Confidence (%)", "Created At (UTC)"])
     for r in records:
         writer.writerow([r.id, r.filename, r.fruit_name, r.confidence, r.created_at])
 
@@ -371,7 +381,7 @@ def export_json(db: Session = Depends(database.get_db), client_id: str = Depends
             "filename": r.filename,
             "fruit_name": r.fruit_name,
             "confidence": r.confidence,
-            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "created_at": utc_iso(r.created_at),
         }
         for r in records
     ]

@@ -567,7 +567,8 @@ function getFilteredHistory() {
     const dateTo = historyDateToInput.value;     // 'YYYY-MM-DD'
     const filtered = allHistoryRecords.filter(item => {
         const matchesSearch = !search || item.fruit_name.toLowerCase().includes(search);
-        const itemDate = item.created_at ? item.created_at.slice(0, 10) : null;
+        // ημερομηνία στην τοπική ώρα του χρήστη (ο server στέλνει UTC), ίδια με αυτή που βλέπει στον πίνακα
+        const itemDate = item.created_at ? formatDateForInput(new Date(item.created_at)) : null;
         const matchesFrom = !dateFrom || (itemDate && itemDate >= dateFrom);
         const matchesTo = !dateTo || (itemDate && itemDate <= dateTo);
         return matchesSearch && matchesFrom && matchesTo;
