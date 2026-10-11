@@ -16,6 +16,33 @@ function toggleTheme() {
 })();
 
 const API_URL = "";
+
+// --- Προσωπικό ιστορικό ανά browser ---
+// Κάθε browser παίρνει ένα τυχαίο αναγνωριστικό (αποθηκεύεται στο localStorage) που
+// στέλνεται σε κάθε αίτημα· ο server επιστρέφει/διαγράφει μόνο τις εγγραφές που
+// δημιουργήθηκαν με αυτό, ώστε κανείς να μη βλέπει ή σβήνει το ιστορικό άλλου.
+function generateClientId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+const CLIENT_ID = (function initClientId() {
+    try {
+        let id = localStorage.getItem('fruitAppClientId');
+        if (!id) {
+            id = generateClientId();
+            localStorage.setItem('fruitAppClientId', id);
+        }
+        return id;
+    } catch (err) {
+        return generateClientId(); // π.χ. private mode χωρίς localStorage: ισχύει μόνο για αυτή την επίσκεψη
+    }
+})();
+
+function apiFetch(path, options = {}) {
+    const headers = { ...(options.headers || {}), 'X-Client-Id': CLIENT_ID };
+    return fetch(`${API_URL}${path}`, { ...options, headers });
+}
 let selectedFiles = [];
 let videoStream = null;
 let capturedPhotoBlob = null;
@@ -350,8 +377,13 @@ async function predictImage(fileOrBlob, filename) {
     const formData = new FormData();
     formData.append('file', fileOrBlob, filename || fileOrBlob.name || 'upload.jpg');
 
-    const response = await fetch(`${API_URL}/predict`, { method: 'POST', body: formData });
-    if (!response.ok) throw new Error('Σφάλμα επεξεργασίας.');
+    const response = await apiFetch('/predict', { method: 'POST', body: formData });
+    if (!response.ok) {
+        // Ο server εξηγεί τον λόγο (π.χ. μη έγκυρη εικόνα, πολύ μεγάλο αρχείο) στο πεδίο "detail"
+        const body = await response.json().catch(() => null);
+        const detail = body && typeof body.detail === 'string' ? body.detail : null;
+        throw new Error(detail || 'Απέτυχε η επεξεργασία της εικόνας.');
+    }
     return response.json();
 }
 
@@ -433,7 +465,7 @@ async function processPrediction(fileOrBlob, filename) {
         console.error(error);
         document.getElementById('resultSkeleton').style.display = 'none';
         document.getElementById('placeholder').style.display = 'flex';
-        showToast('Απέτυχε η επεξεργασία της εικόνας.', 'error');
+        showToast(error.message || 'Απέτυχε η επεξεργασία της εικόνας.', 'error');
     }
 }
 
@@ -656,7 +688,7 @@ async function bulkDeleteSelected() {
     const confirmed = await confirmDialog(`Διαγραφή ${ids.length} επιλεγμένων εγγραφών; Η ενέργεια δεν αναιρείται.`);
     if (!confirmed) return;
     try {
-        const response = await fetch(`${API_URL}/history/bulk-delete`, {
+        const response = await apiFetch('/history/bulk-delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids }),
@@ -674,6 +706,31 @@ async function bulkDeleteSelected() {
 // --- Export dropdown (Excel/CSV/JSON) ---
 function toggleExportMenu() {
     document.getElementById('exportMenu').classList.toggle('active');
+}
+
+// Η λήψη γίνεται μέσω fetch (όχι απλού link) ώστε να σταλεί και το αναγνωριστικό
+// του browser - το αρχείο περιέχει μόνο το ιστορικό του συγκεκριμένου χρήστη.
+const EXPORT_FILENAMES = {
+    excel: 'fruit_predictions_history.xlsx',
+    csv: 'fruit_predictions_history.csv',
+    json: 'fruit_predictions_history.json',
+};
+async function downloadExport(format) {
+    document.getElementById('exportMenu').classList.remove('active');
+    try {
+        const response = await apiFetch(`/export-${format}`);
+        if (!response.ok) throw new Error('Αποτυχία εξαγωγής.');
+        const url = URL.createObjectURL(await response.blob());
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = EXPORT_FILENAMES[format];
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        showToast('Δεν ήταν δυνατή η εξαγωγή του ιστορικού. Δοκίμασε ξανά.', 'error');
+    }
 }
 document.addEventListener('click', (e) => {
     const dropdown = document.querySelector('.export-dropdown');
@@ -702,7 +759,8 @@ function goToHistoryPage(page) {
 async function loadHistory() {
     const tableBody = document.getElementById('historyTableBody');
     try {
-        const response = await fetch(`${API_URL}/history`);
+        const response = await apiFetch('/history');
+        if (!response.ok) throw new Error('Αποτυχία φόρτωσης ιστορικού.');
         const data = await response.json();
         allHistoryRecords = data;
         renderHistoryTable();
@@ -716,7 +774,7 @@ async function deleteHistoryRecord(recordId) {
     const confirmed = await confirmDialog(`Διαγραφή της εγγραφής #${recordId}; Η ενέργεια δεν αναιρείται.`);
     if (!confirmed) return;
     try {
-        const response = await fetch(`${API_URL}/history/${recordId}`, { method: 'DELETE' });
+        const response = await apiFetch(`/history/${recordId}`, { method: 'DELETE' });
         if (!response.ok) throw new Error('Αποτυχία διαγραφής.');
         allHistoryRecords = allHistoryRecords.filter(r => r.id !== recordId);
         selectedHistoryIds.delete(recordId);
@@ -770,7 +828,7 @@ async function viewHistoryGradcam(recordId) {
     gradcamOverlay.classList.add('active');
 
     try {
-        const response = await fetch(`${API_URL}/history/${recordId}/gradcam`);
+        const response = await apiFetch(`/history/${recordId}/gradcam`);
         if (!response.ok) throw new Error('not found');
         const data = await response.json();
         gradcamLightboxBody.innerHTML = `<img src="${data.gradcam_image}" alt="Grad-CAM heatmap">`;

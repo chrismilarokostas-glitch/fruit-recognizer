@@ -11,3 +11,5 @@ class PredictionRecord(Base):
     confidence = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
     gradcam_image = Column(Text, nullable=True)
+    # Τυχαίο αναγνωριστικό του browser που δημιούργησε την εγγραφή (προσωπικό ιστορικό)
+    client_id = Column(String, index=True, nullable=True)

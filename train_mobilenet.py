@@ -101,7 +101,17 @@ else:
     device = torch.device("cpu")
     print("--> Η GPU δεν βρέθηκε, χρήση CPU.")
 
-DATA_DIR = r"C:\Users\crish\Desktop\ptyxiakh\dataset"
+# Σταθερό seed για αναπαραγώγιμα αποτελέσματα (σειρά δειγμάτων, augmentation,
+# αρχικοποίηση classifier). Στο DirectML backend ορισμένες πράξεις GPU δεν είναι
+# πλήρως ντετερμινιστικές, οπότε μικρές αποκλίσεις μεταξύ runs παραμένουν πιθανές.
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+
+# Το dataset αναζητείται δίπλα στο script (dataset/train, dataset/test), ώστε ο
+# κώδικας να τρέχει σε οποιονδήποτε υπολογιστή χωρίς αλλαγή διαδρομής.
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset")
 BATCH_SIZE = 16 # μικρότερο batch size μειώνει την πίεση στη VRAM
 EPOCHS = 30
 BACKBONE_LR = 0.0002

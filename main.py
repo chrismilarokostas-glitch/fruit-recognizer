@@ -1,4 +1,5 @@
 import io
+import re
 import gc
 import csv
 import json
@@ -9,10 +10,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models, transforms
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import matplotlib.cm as cm
 from openpyxl import Workbook
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException
+from fastapi import FastAPI, UploadFile, File, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -30,6 +31,10 @@ with database.engine.connect() as conn:
     existing_columns = {row[1] for row in conn.execute(text("PRAGMA table_info(predictions)"))}
     if "gradcam_image" not in existing_columns:
         conn.execute(text("ALTER TABLE predictions ADD COLUMN gradcam_image TEXT"))
+        conn.commit()
+    if "client_id" not in existing_columns:
+        conn.execute(text("ALTER TABLE predictions ADD COLUMN client_id VARCHAR"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_predictions_client_id ON predictions (client_id)"))
         conn.commit()
 
 app = FastAPI(title="Fruit Recognition API")
@@ -70,6 +75,37 @@ transform = transforms.Compose([
 ])
 
 GRADCAM_TARGET_LAYER = model.features[-1]
+
+# Όριο μεγέθους upload - προστατεύει τη (λίγη) μνήμη του free tier από τεράστια αρχεία
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
+# Το ιστορικό είναι προσωπικό ανά browser: το frontend παράγει ένα τυχαίο
+# αναγνωριστικό (UUID, στο localStorage) και το στέλνει σε κάθε αίτημα. Κάθε
+# εγγραφή "ανήκει" στο αναγνωριστικό που τη δημιούργησε, και μόνο αυτό μπορεί
+# να τη δει, να την εξαγάγει ή να τη διαγράψει.
+CLIENT_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{16,64}$")
+
+
+def get_client_id(x_client_id: str = Header(default="")) -> str:
+    if not CLIENT_ID_PATTERN.match(x_client_id):
+        raise HTTPException(status_code=400, detail="Λείπει ή δεν είναι έγκυρο το αναγνωριστικό X-Client-Id.")
+    return x_client_id
+
+
+def load_uploaded_image(image_bytes: bytes) -> Image.Image:
+    """Ανοίγει τα bytes ως εικόνα RGB· αν δεν είναι έγκυρη εικόνα, επιστρέφει 400 αντί για 500."""
+    try:
+        image = Image.open(io.BytesIO(image_bytes))
+        image.load()  # αναγκάζει πλήρη αποκωδικοποίηση τώρα (κομμένα/χαλασμένα αρχεία σκάνε εδώ)
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+        raise HTTPException(status_code=400, detail="Το αρχείο δεν είναι έγκυρη εικόνα ή είναι κατεστραμμένο.")
+
+    if image.mode in ('RGBA', 'LA') or (image.mode == 'P' and 'transparency' in image.info):
+        image = image.convert('RGBA')
+        background = Image.new('RGB', image.size, (255, 255, 255))
+        background.paste(image, mask=image.split()[-1])
+        return background
+    return image.convert('RGB')
 
 
 def generate_gradcam_data_uri(original_image: Image.Image, predicted_idx: int) -> str:
@@ -140,19 +176,18 @@ def health_check():
 async def predict(
     file: UploadFile = File(...),
     db: Session = Depends(database.get_db),
+    client_id: str = Depends(get_client_id),
 ):
-    if not file.content_type.startswith("image/"):
+    if not (file.content_type or "").startswith("image/"):
         raise HTTPException(status_code=400, detail="Το αρχείο πρέπει να είναι εικόνα.")
 
-    image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes))
-
-    if image.mode in ('RGBA', 'LA') or (image.mode == 'P' and 'transparency' in image.info):
-        background = Image.new('RGB', image.size, (255, 255, 255))
-        background.paste(image, mask=image.split()[-1])
-        image = background
-    else:
-        image = image.convert('RGB')
+    image_bytes = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(image_bytes) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Η εικόνα ξεπερνά το όριο των {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.",
+        )
+    image = load_uploaded_image(image_bytes)
 
     input_tensor = transform(image).unsqueeze(0)
     
@@ -182,7 +217,8 @@ async def predict(
         filename=file.filename,
         fruit_name=predicted_fruit,
         confidence=confidence_score,
-        gradcam_image=gradcam_image
+        gradcam_image=gradcam_image,
+        client_id=client_id,
     )
     db.add(db_record)
     db.commit()
@@ -200,7 +236,7 @@ async def predict(
     }
 
 @app.get("/history")
-def get_history(db: Session = Depends(database.get_db)):
+def get_history(db: Session = Depends(database.get_db), client_id: str = Depends(get_client_id)):
     records = (
         db.query(
             db_models.PredictionRecord.id,
@@ -209,6 +245,7 @@ def get_history(db: Session = Depends(database.get_db)):
             db_models.PredictionRecord.confidence,
             db_models.PredictionRecord.created_at,
         )
+        .filter(db_models.PredictionRecord.client_id == client_id)
         .order_by(db_models.PredictionRecord.created_at.desc())
         .all()
     )
@@ -223,10 +260,22 @@ def get_history(db: Session = Depends(database.get_db)):
         for r in records
     ]
 
+def get_own_record(db: Session, record_id: int, client_id: str):
+    """Η εγγραφή με αυτό το ID, μόνο αν ανήκει στον συγκεκριμένο browser (αλλιώς None -> 404)."""
+    return (
+        db.query(db_models.PredictionRecord)
+        .filter(
+            db_models.PredictionRecord.id == record_id,
+            db_models.PredictionRecord.client_id == client_id,
+        )
+        .first()
+    )
+
+
 @app.get("/history/{record_id}/gradcam")
-def get_history_gradcam(record_id: int, db: Session = Depends(database.get_db)):
+def get_history_gradcam(record_id: int, db: Session = Depends(database.get_db), client_id: str = Depends(get_client_id)):
     """Επιστρέφει το αποθηκευμένο Grad-CAM heatmap μιας συγκεκριμένης εγγραφής ιστορικού."""
-    record = db.query(db_models.PredictionRecord).filter(db_models.PredictionRecord.id == record_id).first()
+    record = get_own_record(db, record_id, client_id)
     if not record:
         raise HTTPException(status_code=404, detail=f"Δεν βρέθηκε εγγραφή με ID {record_id}.")
     if not record.gradcam_image:
@@ -234,9 +283,9 @@ def get_history_gradcam(record_id: int, db: Session = Depends(database.get_db)):
     return {"id": record.id, "gradcam_image": record.gradcam_image}
 
 @app.delete("/history/{record_id}")
-def delete_history_record(record_id: int, db: Session = Depends(database.get_db)):
+def delete_history_record(record_id: int, db: Session = Depends(database.get_db), client_id: str = Depends(get_client_id)):
     """Διαγράφει μία μεμονωμένη εγγραφή ιστορικού με βάση το ID της."""
-    record = db.query(db_models.PredictionRecord).filter(db_models.PredictionRecord.id == record_id).first()
+    record = get_own_record(db, record_id, client_id)
     if not record:
         raise HTTPException(status_code=404, detail=f"Δεν βρέθηκε εγγραφή με ID {record_id}.")
     db.delete(record)
@@ -249,22 +298,34 @@ class BulkDeleteRequest(BaseModel):
 
 
 @app.post("/history/bulk-delete")
-def bulk_delete_history(payload: BulkDeleteRequest, db: Session = Depends(database.get_db)):
+def bulk_delete_history(payload: BulkDeleteRequest, db: Session = Depends(database.get_db), client_id: str = Depends(get_client_id)):
     """Διαγράφει πολλαπλές εγγραφές ιστορικού ταυτόχρονα (μαζική διαγραφή από το frontend)."""
     if not payload.ids:
         return {"deleted": 0}
     deleted = (
         db.query(db_models.PredictionRecord)
-        .filter(db_models.PredictionRecord.id.in_(payload.ids))
+        .filter(
+            db_models.PredictionRecord.id.in_(payload.ids),
+            db_models.PredictionRecord.client_id == client_id,
+        )
         .delete(synchronize_session=False)
     )
     db.commit()
     return {"deleted": deleted}
 
+def get_own_records(db: Session, client_id: str):
+    return (
+        db.query(db_models.PredictionRecord)
+        .filter(db_models.PredictionRecord.client_id == client_id)
+        .order_by(db_models.PredictionRecord.created_at.desc())
+        .all()
+    )
+
+
 @app.get("/export-excel")
-def export_excel(db: Session = Depends(database.get_db)):
-    """Εξαγωγή όλου του ιστορικού προβλέψεων ως αρχείο Excel (.xlsx) για λήψη."""
-    records = db.query(db_models.PredictionRecord).order_by(db_models.PredictionRecord.created_at.desc()).all()
+def export_excel(db: Session = Depends(database.get_db), client_id: str = Depends(get_client_id)):
+    """Εξαγωγή του ιστορικού προβλέψεων του χρήστη ως αρχείο Excel (.xlsx) για λήψη."""
+    records = get_own_records(db, client_id)
 
     wb = Workbook()
     ws = wb.active
@@ -283,9 +344,9 @@ def export_excel(db: Session = Depends(database.get_db)):
     )
 
 @app.get("/export-csv")
-def export_csv(db: Session = Depends(database.get_db)):
-    """Εξαγωγή όλου του ιστορικού προβλέψεων ως αρχείο CSV για λήψη."""
-    records = db.query(db_models.PredictionRecord).order_by(db_models.PredictionRecord.created_at.desc()).all()
+def export_csv(db: Session = Depends(database.get_db), client_id: str = Depends(get_client_id)):
+    """Εξαγωγή του ιστορικού προβλέψεων του χρήστη ως αρχείο CSV για λήψη."""
+    records = get_own_records(db, client_id)
 
     text_buffer = io.StringIO()
     writer = csv.writer(text_buffer)
@@ -301,9 +362,9 @@ def export_csv(db: Session = Depends(database.get_db)):
     )
 
 @app.get("/export-json")
-def export_json(db: Session = Depends(database.get_db)):
-    """Εξαγωγή όλου του ιστορικού προβλέψεων ως αρχείο JSON για λήψη."""
-    records = db.query(db_models.PredictionRecord).order_by(db_models.PredictionRecord.created_at.desc()).all()
+def export_json(db: Session = Depends(database.get_db), client_id: str = Depends(get_client_id)):
+    """Εξαγωγή του ιστορικού προβλέψεων του χρήστη ως αρχείο JSON για λήψη."""
+    records = get_own_records(db, client_id)
     data = [
         {
             "id": r.id,
