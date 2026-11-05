@@ -283,6 +283,11 @@ th { background-color: var(--surface-1); font-weight: 600; font-family: var(--fo
 .batch-item { display: flex; align-items: center; gap: 0.6rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.82rem; }
 .batch-item .batch-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .batch-item .batch-status { flex-shrink: 0; width: 18px; text-align: center; }
+.batch-item .batch-result { flex-shrink: 0; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+.batch-item.status-done { cursor: pointer; }
+.batch-item.status-done:hover { border-color: var(--primary); }
+.batch-item.selected { border-color: var(--primary); box-shadow: inset 3px 0 0 var(--primary); }
+.batch-item.selected .batch-result { color: var(--text-main); font-weight: 600; }
 .batch-item.status-pending .batch-status { color: var(--text-muted); }
 .batch-item.status-processing .batch-status i { color: var(--citrus); animation: spin 1s linear infinite; }
 .batch-item.status-done .batch-status { color: var(--leaf); }

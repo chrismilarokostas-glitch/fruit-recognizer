@@ -281,21 +281,35 @@ function updatePredictBtnLabel() {
         : `<i class="fa-solid fa-wand-magic-sparkles"></i> Εκτέλεση Αναγνώρισης`;
 }
 
+// Αποτελέσματα της τελευταίας αναγνώρισης πολλών εικόνων (ένα ανά αρχείο της λίστας),
+// ώστε ο χρήστης να μπορεί να δει ξανά το αποτέλεσμα οποιασδήποτε εικόνας με κλικ.
+let batchResults = [];
+
 function renderBatchList() {
+    batchResults = [];
     batchList.style.display = 'flex';
     batchList.innerHTML = selectedFiles.map((f, i) => `
-        <div class="batch-item status-pending" id="batchItem-${i}">
+        <div class="batch-item status-pending" id="batchItem-${i}" onclick="showBatchResult(${i})">
             <span class="batch-name">${f.name}</span>
+            <span class="batch-result" id="batchResult-${i}"></span>
             <span class="batch-status" id="batchStatus-${i}"><i class="fa-regular fa-clock"></i></span>
         </div>
     `).join('');
+}
+
+function showBatchResult(index) {
+    const data = batchResults[index];
+    if (!data) return;
+    renderPredictionResult(data);
+    document.querySelectorAll('.batch-item').forEach((el, i) => el.classList.toggle('selected', i === index));
 }
 
 function setBatchItemStatus(index, status) {
     const item = document.getElementById(`batchItem-${index}`);
     const statusEl = document.getElementById(`batchStatus-${index}`);
     if (!item || !statusEl) return;
-    item.className = `batch-item status-${status}`;
+    const wasSelected = item.classList.contains('selected');
+    item.className = `batch-item status-${status}${wasSelected ? ' selected' : ''}`;
     if (status === 'processing') statusEl.innerHTML = `<i class="fa-solid fa-circle-notch"></i>`;
     else if (status === 'done') statusEl.innerHTML = `<i class="fa-solid fa-check"></i>`;
     else if (status === 'error') statusEl.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
@@ -348,9 +362,11 @@ async function runBatchPredict() {
         showResultSkeleton();
         try {
             const data = await predictImage(selectedFiles[i]);
-            renderPredictionResult(data);
+            batchResults[i] = data;
+            document.getElementById(`batchResult-${i}`).textContent = `${data.prediction} · ${data.confidence_percentage}%`;
             playPredictionSound();
             setBatchItemStatus(i, 'done');
+            showBatchResult(i);
             successCount++;
         } catch (error) {
             console.error(error);
